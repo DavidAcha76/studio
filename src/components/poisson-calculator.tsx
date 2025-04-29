@@ -41,8 +41,8 @@ import {
 } from "@/components/ui/tooltip";
 
 const formSchema = z.object({
-  lambda: z.coerce.number().min(0, "Lambda (λ) must be non-negative"),
-  x: z.coerce.number().int().min(0, "Number of Events (x) must be a non-negative integer"),
+  lambda: z.coerce.number().min(0, "Lambda (λ) debe ser no negativo"),
+  x: z.coerce.number().int().min(0, "Número de eventos (x) debe ser un entero no negativo"),
 });
 
 type PoissonFormValues = z.infer<typeof formSchema>;
@@ -158,8 +158,8 @@ export function PoissonCalculator() {
   return (
     <Card className="shadow-md">
       <CardHeader>
-        <CardTitle className="text-2xl text-foreground">Poisson Calculator</CardTitle>
-        <CardDescription>Calculate Poisson distribution probabilities.</CardDescription>
+        <CardTitle className="text-2xl text-foreground">Calculadora Poisson</CardTitle>
+        <CardDescription>Calcula probabilidades de la distribución de Poisson.</CardDescription>
       </CardHeader>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -171,18 +171,18 @@ export function PoissonCalculator() {
               render={({ field }) => (
                 <FormItem>
                    <div className="flex items-center">
-                    <FormLabel>Average Rate (λ)</FormLabel>
+                    <FormLabel>Tasa Promedio (λ)</FormLabel>
                      <Tooltip>
                       <TooltipTrigger asChild>
                          <HelpCircle className="ml-1 h-4 w-4 text-muted-foreground cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>The average number of events in an interval.</p>
+                        <p>El número promedio de eventos en un intervalo.</p>
                       </TooltipContent>
                     </Tooltip>
                   </div>
                   <FormControl>
-                    <Input type="number" step="any" placeholder="e.g., 5" {...field} />
+                    <Input type="number" step="any" placeholder="ej., 5" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -194,18 +194,18 @@ export function PoissonCalculator() {
               render={({ field }) => (
                 <FormItem>
                   <div className="flex items-center">
-                    <FormLabel>Number of Events (x)</FormLabel>
+                    <FormLabel>Número de Eventos (x)</FormLabel>
                     <Tooltip>
                       <TooltipTrigger asChild>
                          <HelpCircle className="ml-1 h-4 w-4 text-muted-foreground cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>The specific number of events for probability calculation.</p>
+                        <p>El número específico de eventos para el cálculo de probabilidad.</p>
                       </TooltipContent>
                     </Tooltip>
                   </div>
                   <FormControl>
-                    <Input type="number" step="1" placeholder="e.g., 3" {...field} />
+                    <Input type="number" step="1" placeholder="ej., 3" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -216,7 +216,7 @@ export function PoissonCalculator() {
           <CardFooter className="flex justify-end">
             <Button type="submit" disabled={isLoading}>
               <Calculator className="mr-2 h-4 w-4" />
-              {isLoading ? "Calculating..." : "Calculate"}
+              {isLoading ? "Calculando..." : "Calcular"}
             </Button>
           </CardFooter>
         </form>
@@ -224,25 +224,25 @@ export function PoissonCalculator() {
 
       {results && (
         <div className="mt-6 p-4 border-t">
-          <h3 className="text-lg font-semibold mb-3 text-foreground">Results</h3>
+          <h3 className="text-lg font-semibold mb-3 text-foreground">Resultados</h3>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[200px]">Metric</TableHead>
-                <TableHead className="text-right">Value</TableHead>
+                <TableHead className="w-[200px]">Métrica</TableHead>
+                <TableHead className="text-right">Valor</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               <TableRow>
-                <TableCell className="font-medium">Mean (μ = λ)</TableCell>
+                <TableCell className="font-medium">Media (μ = λ)</TableCell>
                 <TableCell className="text-right">{results.mean.toFixed(5)}</TableCell>
               </TableRow>
               <TableRow>
-                <TableCell className="font-medium">Variance (σ² = λ)</TableCell>
+                <TableCell className="font-medium">Varianza (σ² = λ)</TableCell>
                 <TableCell className="text-right">{results.variance.toFixed(5)}</TableCell>
               </TableRow>
                <TableRow>
-                <TableCell className="font-medium">Standard Deviation (σ)</TableCell>
+                <TableCell className="font-medium">Desviación Estándar (σ)</TableCell>
                 <TableCell className="text-right">{results.stdDev.toFixed(5)}</TableCell>
               </TableRow>
               <TableRow>

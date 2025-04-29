@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'StatCalc', // Updated title
-  description: 'Poisson and Hypergeometric Distribution Calculators',
+  title: 'StatCalc', // Mantener nombre de la app
+  description: 'Calculadoras de Distribución Poisson e Hipergeométrica', // Updated description to Spanish
 };
 
 export default function RootLayout({
@@ -24,7 +24,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="es"> {/* Changed lang to es */}
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         {children}
         <Toaster /> {/* Add Toaster */}

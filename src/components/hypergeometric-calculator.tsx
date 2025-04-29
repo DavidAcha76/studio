@@ -49,24 +49,24 @@ import { useToast } from "@/hooks/use-toast";
 
 
 const formSchema = z.object({
-  populationSize: z.coerce.number().int().min(1, "Population size (N) must be at least 1"),
-  successStates: z.coerce.number().int().min(0, "Success states (K) must be non-negative"),
-  sampleSize: z.coerce.number().int().min(1, "Sample size (n) must be at least 1"),
-  observedSuccesses: z.coerce.number().int().min(0, "Observed successes (k) must be non-negative"),
+  populationSize: z.coerce.number().int().min(1, "Tamaño de la población (N) debe ser al menos 1"),
+  successStates: z.coerce.number().int().min(0, "Estados de éxito (K) deben ser no negativos"),
+  sampleSize: z.coerce.number().int().min(1, "Tamaño de la muestra (n) debe ser al menos 1"),
+  observedSuccesses: z.coerce.number().int().min(0, "Éxitos observados (k) deben ser no negativos"),
 }).refine(data => data.successStates <= data.populationSize, {
-  message: "Success states (K) cannot exceed population size (N)",
+  message: "Estados de éxito (K) no pueden exceder el tamaño de la población (N)",
   path: ["successStates"],
 }).refine(data => data.sampleSize <= data.populationSize, {
-  message: "Sample size (n) cannot exceed population size (N)",
+  message: "Tamaño de la muestra (n) no puede exceder el tamaño de la población (N)",
   path: ["sampleSize"],
 }).refine(data => data.observedSuccesses <= data.sampleSize, {
-    message: "Observed successes (k) cannot exceed sample size (n)",
+    message: "Éxitos observados (k) no pueden exceder el tamaño de la muestra (n)",
     path: ["observedSuccesses"],
 }).refine(data => data.observedSuccesses <= data.successStates, {
-    message: "Observed successes (k) cannot exceed success states (K)",
+    message: "Éxitos observados (k) no pueden exceder los estados de éxito (K)",
     path: ["observedSuccesses"],
 }).refine(data => (data.sampleSize - data.observedSuccesses) <= (data.populationSize - data.successStates), {
-    message: "Failures in sample (n-k) cannot exceed failures in population (N-K)",
+    message: "Fracasos en la muestra (n-k) no pueden exceder los fracasos en la población (N-K)",
     path: ["observedSuccesses"], // Path can be adjusted, maybe points to sampleSize too
 });
 
@@ -118,8 +118,8 @@ export function HypergeometricCalculator() {
      if (combinations(N, n) === Infinity && n > 0) {
          toast({
            variant: "destructive",
-           title: "Calculation Warning",
-           description: "Inputs result in extremely large numbers (combinations > 1.79e308). Results might be inaccurate or zero due to limitations.",
+           title: "Advertencia de Cálculo",
+           description: "Las entradas resultan en números extremadamente grandes (combinaciones > 1.79e308). Los resultados podrían ser inexactos o cero debido a limitaciones.",
          });
          // Depending on the case, you might still try calculation or return null/zeroes
          // For now, let's attempt calculation but the warning informs the user.
@@ -178,11 +178,11 @@ export function HypergeometricCalculator() {
             );
             setResults(calculatedResults);
         } catch (error) {
-             console.error("Calculation error:", error);
+             console.error("Error de cálculo:", error);
              toast({
                  variant: "destructive",
-                 title: "Calculation Error",
-                 description: "An error occurred during calculation. Please check inputs.",
+                 title: "Error de Cálculo",
+                 description: "Ocurrió un error durante el cálculo. Por favor, revise las entradas.",
              });
              setResults(null); // Ensure results are cleared on error
         } finally {
@@ -195,8 +195,8 @@ export function HypergeometricCalculator() {
   return (
     <Card className="shadow-md">
       <CardHeader>
-        <CardTitle className="text-2xl text-foreground">Hypergeometric Calculator</CardTitle>
-        <CardDescription>Calculate Hypergeometric distribution probabilities.</CardDescription>
+        <CardTitle className="text-2xl text-foreground">Calculadora Hipergeométrica</CardTitle>
+        <CardDescription>Calcula probabilidades de la distribución Hipergeométrica.</CardDescription>
       </CardHeader>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -208,18 +208,18 @@ export function HypergeometricCalculator() {
               render={({ field }) => (
                 <FormItem>
                    <div className="flex items-center">
-                    <FormLabel>Population Size (N)</FormLabel>
+                    <FormLabel>Tamaño Población (N)</FormLabel>
                       <Tooltip>
                         <TooltipTrigger asChild>
                             <HelpCircle className="ml-1 h-4 w-4 text-muted-foreground cursor-help" />
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p>Total number of items in the population.</p>
+                            <p>Número total de elementos en la población.</p>
                         </TooltipContent>
                     </Tooltip>
                    </div>
                   <FormControl>
-                    <Input type="number" step="1" placeholder="e.g., 50" {...field} />
+                    <Input type="number" step="1" placeholder="ej., 50" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -231,18 +231,18 @@ export function HypergeometricCalculator() {
               render={({ field }) => (
                 <FormItem>
                    <div className="flex items-center">
-                    <FormLabel>Success States (K)</FormLabel>
+                    <FormLabel>Estados de Éxito (K)</FormLabel>
                      <Tooltip>
                         <TooltipTrigger asChild>
                             <HelpCircle className="ml-1 h-4 w-4 text-muted-foreground cursor-help" />
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p>Total number of items with the desired characteristic (successes) in the population.</p>
+                            <p>Número total de elementos con la característica deseada (éxitos) en la población.</p>
                         </TooltipContent>
                     </Tooltip>
                    </div>
                   <FormControl>
-                    <Input type="number" step="1" placeholder="e.g., 10" {...field} />
+                    <Input type="number" step="1" placeholder="ej., 10" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -254,18 +254,18 @@ export function HypergeometricCalculator() {
               render={({ field }) => (
                 <FormItem>
                    <div className="flex items-center">
-                     <FormLabel>Sample Size (n)</FormLabel>
+                     <FormLabel>Tamaño Muestra (n)</FormLabel>
                       <Tooltip>
                         <TooltipTrigger asChild>
                             <HelpCircle className="ml-1 h-4 w-4 text-muted-foreground cursor-help" />
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p>Number of items drawn from the population without replacement.</p>
+                            <p>Número de elementos extraídos de la población sin reemplazo.</p>
                         </TooltipContent>
                     </Tooltip>
                    </div>
                   <FormControl>
-                    <Input type="number" step="1" placeholder="e.g., 20" {...field} />
+                    <Input type="number" step="1" placeholder="ej., 20" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -277,18 +277,18 @@ export function HypergeometricCalculator() {
               render={({ field }) => (
                 <FormItem>
                    <div className="flex items-center">
-                    <FormLabel>Observed Successes (k)</FormLabel>
+                    <FormLabel>Éxitos Observados (k)</FormLabel>
                       <Tooltip>
                         <TooltipTrigger asChild>
                             <HelpCircle className="ml-1 h-4 w-4 text-muted-foreground cursor-help" />
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p>The specific number of successes observed in the sample.</p>
+                            <p>El número específico de éxitos observados en la muestra.</p>
                         </TooltipContent>
                     </Tooltip>
                    </div>
                   <FormControl>
-                    <Input type="number" step="1" placeholder="e.g., 5" {...field} />
+                    <Input type="number" step="1" placeholder="ej., 5" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -299,7 +299,7 @@ export function HypergeometricCalculator() {
           <CardFooter className="flex justify-end">
             <Button type="submit" disabled={isLoading}>
                <Calculator className="mr-2 h-4 w-4" />
-              {isLoading ? "Calculating..." : "Calculate"}
+              {isLoading ? "Calculando..." : "Calcular"}
             </Button>
           </CardFooter>
         </form>
@@ -307,25 +307,25 @@ export function HypergeometricCalculator() {
 
       {results && (
         <div className="mt-6 p-4 border-t">
-          <h3 className="text-lg font-semibold mb-3 text-foreground">Results</h3>
+          <h3 className="text-lg font-semibold mb-3 text-foreground">Resultados</h3>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[200px]">Metric</TableHead>
-                <TableHead className="text-right">Value</TableHead>
+                <TableHead className="w-[200px]">Métrica</TableHead>
+                <TableHead className="text-right">Valor</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               <TableRow>
-                <TableCell className="font-medium">Mean (E[X])</TableCell>
+                <TableCell className="font-medium">Media (E[X])</TableCell>
                 <TableCell className="text-right">{results.mean.toFixed(5)}</TableCell>
               </TableRow>
               <TableRow>
-                <TableCell className="font-medium">Variance (Var(X))</TableCell>
+                <TableCell className="font-medium">Varianza (Var(X))</TableCell>
                 <TableCell className="text-right">{results.variance.toFixed(5)}</TableCell>
               </TableRow>
               <TableRow>
-                <TableCell className="font-medium">Standard Deviation (SD)</TableCell>
+                <TableCell className="font-medium">Desviación Estándar (SD)</TableCell>
                 <TableCell className="text-right">{results.stdDev.toFixed(5)}</TableCell>
               </TableRow>
               <TableRow>
