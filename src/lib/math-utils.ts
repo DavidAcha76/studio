@@ -214,3 +214,61 @@ export function hypergeometricStdDev(N: number, K: number, n: number): number {
    const variance = hypergeometricVariance(N, K, n);
    return isNaN(variance) ? NaN : Math.sqrt(variance);
 }
+
+
+/**
+ * Calculates the Probability Density Function (PDF) for a Continuous Uniform Distribution.
+ * f(x) = 1 / (b - a) for a <= x <= b
+ * f(x) = 0 otherwise
+ * @param a Lower bound of the interval.
+ * @param b Upper bound of the interval.
+ * @param x The value at which to evaluate the PDF.
+ * @returns The value of the PDF f(x).
+ */
+export function continuousUniformPDF(a: number, b: number, x: number): number {
+  if (a >= b) {
+    // Or throw error, depending on desired behavior for invalid intervals
+    return 0; 
+  }
+  if (x >= a && x <= b) {
+    return 1 / (b - a);
+  }
+  return 0;
+}
+
+/**
+ * Calculates the mean (expected value) of a Continuous Uniform Distribution.
+ * E(X) = (a + b) / 2
+ * @param a Lower bound of the interval.
+ * @param b Upper bound of the interval.
+ * @returns The mean.
+ */
+export function continuousUniformMean(a: number, b: number): number {
+  if (a > b) return NaN; // Or handle error for invalid interval
+  return (a + b) / 2;
+}
+
+/**
+ * Calculates the variance of a Continuous Uniform Distribution.
+ * Var(X) = (b - a)^2 / 12
+ * @param a Lower bound of the interval.
+ * @param b Upper bound of the interval.
+ * @returns The variance.
+ */
+export function continuousUniformVariance(a: number, b: number): number {
+  if (a > b) return NaN; // Or handle error for invalid interval
+  return Math.pow(b - a, 2) / 12;
+}
+
+/**
+ * Calculates the standard deviation of a Continuous Uniform Distribution.
+ * SD(X) = sqrt(Var(X))
+ * @param a Lower bound of the interval.
+ * @param b Upper bound of the interval.
+ * @returns The standard deviation.
+ */
+export function continuousUniformStdDev(a: number, b: number): number {
+  if (a > b) return NaN; // Or handle error for invalid interval
+  const variance = continuousUniformVariance(a, b);
+  return Math.sqrt(variance);
+}
