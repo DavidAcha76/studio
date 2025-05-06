@@ -331,3 +331,81 @@ export function continuousUniformStdDev(a: number, b: number): number {
   const variance = continuousUniformVariance(a, b);
   return Math.sqrt(variance);
 }
+
+/**
+ * Calculates the error function (erf).
+ * This is an approximation using a series expansion.
+ * Abramowitz and Stegun formula 7.1.26
+ * @param x The input value.
+ * @returns The value of erf(x).
+ */
+export function erf(x: number): number {
+  // Constants
+  const a1 =  0.254829592;
+  const a2 = -0.284496736;
+  const a3 =  1.421413741;
+  const a4 = -1.453152027;
+  const a5 =  1.061405429;
+  const p  =  0.3275911;
+
+  // Save the sign of x
+  const sign = (x >= 0) ? 1 : -1;
+  x = Math.abs(x);
+
+  // A&S formula 7.1.26
+  const t = 1.0 / (1.0 + p * x);
+  const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+
+  return sign * y;
+}
+
+/**
+ * Calculates the Cumulative Distribution Function (CDF) for a Normal Distribution.
+ * Φ(z) = 0.5 * (1 + erf(z / sqrt(2)))
+ * @param x The value at which to evaluate the CDF.
+ * @param mean The mean (μ) of the distribution.
+ * @param stdDev The standard deviation (σ) of the distribution.
+ * @returns The value of the CDF Φ(x).
+ */
+export function normalCDF(x: number, mean: number, stdDev: number): number {
+  if (stdDev <= 0) {
+    // Or throw an error for invalid stdDev
+    return NaN;
+  }
+  const z = (x - mean) / stdDev;
+  return 0.5 * (1 + erf(z / Math.sqrt(2)));
+}
+
+/**
+ * Calculates the Probability Density Function (PDF) for a Normal Distribution.
+ * f(x | μ, σ^2) = (1 / (σ * sqrt(2π))) * exp(-0.5 * ((x - μ) / σ)^2)
+ * @param x The value at which to evaluate the PDF.
+ * @param mean The mean (μ) of the distribution.
+ * @param stdDev The standard deviation (σ) of the distribution.
+ * @returns The value of the PDF f(x).
+ */
+export function normalPDF(x: number, mean: number, stdDev: number): number {
+  if (stdDev <= 0) {
+    // Or throw an error
+    return NaN;
+  }
+  const exponent = -0.5 * Math.pow((x - mean) / stdDev, 2);
+  const coefficient = 1 / (stdDev * Math.sqrt(2 * Math.PI));
+  return coefficient * Math.exp(exponent);
+}
+
+
+/**
+ * Calculates the Z-score.
+ * z = (x - μ) / σ
+ * @param x The value.
+ * @param mean The mean (μ).
+ * @param stdDev The standard deviation (σ).
+ * @returns The Z-score.
+ */
+export function zScore(x: number, mean: number, stdDev: number): number {
+  if (stdDev <= 0) {
+    return NaN; // Or throw an error
+  }
+  return (x - mean) / stdDev;
+}
