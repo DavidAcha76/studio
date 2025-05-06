@@ -1,15 +1,11 @@
 import type {Metadata} from 'next';
-import {Geist, Geist_Mono} from 'next/font/google';
+import { Inter } from 'next/font/google'; // Import Inter font
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"; // Import Toaster
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-});
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
+// Define Inter font with variable
+const inter = Inter({
+  variable: '--font-inter',
   subsets: ['latin'],
 });
 
@@ -25,7 +21,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es"> {/* Changed lang to es */}
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      {/* Apply Inter font variable to body */}
+      <body className={`${inter.variable} font-sans antialiased`}> {/* Use font-sans which references --font-inter */}
         {children}
         <Toaster /> {/* Add Toaster */}
       </body>

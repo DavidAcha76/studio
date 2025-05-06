@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import { fontFamily } from "tailwindcss/defaultTheme"; // Import default theme for font extension
 
 export default {
     darkMode: ["class"],
@@ -9,8 +10,12 @@ export default {
   ],
   theme: {
   	extend: {
+      fontFamily: { // Add fontFamily extension
+        sans: ["var(--font-inter)", ...fontFamily.sans], // Use Inter font variable
+      },
   		colors: {
   			background: 'hsl(var(--background))',
+        'background-end': 'hsl(var(--background-end))', // Added for gradient
   			foreground: 'hsl(var(--foreground))',
   			card: {
   				DEFAULT: 'hsl(var(--card))',

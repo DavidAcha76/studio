@@ -193,7 +193,7 @@ export function HypergeometricCalculator() {
 
 
   return (
-    <Card className="shadow-md">
+    <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300"> {/* Increased shadow and added hover effect */}
       <CardHeader>
         <CardTitle className="text-2xl text-foreground">Calculadora Hipergeométrica</CardTitle>
         <CardDescription>Calcula probabilidades de la distribución Hipergeométrica.</CardDescription>
