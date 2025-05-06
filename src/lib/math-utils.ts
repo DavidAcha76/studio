@@ -1,4 +1,26 @@
 /**
+ * Calculates the Cumulative Distribution Function (CDF) for a Continuous Uniform Distribution.
+ * F(x) = 0 for x < a
+ * F(x) = (x - a) / (b - a) for a <= x <= b
+ * F(x) = 1 for x > b
+ * @param a Lower bound of the interval.
+ * @param b Upper bound of the interval.
+ * @param x The value at which to evaluate the CDF.
+ * @returns The value of the CDF F(x).
+ */
+export function continuousUniformCDF(a: number, b: number, x: number): number {
+  if (a >= b) {
+    return NaN; // Or throw an error, depending on how you want to handle invalid intervals
+  }
+  if (x < a) {
+    return 0;
+  }
+  if (x > b) {
+    return 1;
+  }
+  return (x - a) / (b - a);
+}
+/**
  * Calculates the factorial of a non-negative integer.
  * @param n The non-negative integer.
  * @returns The factorial of n.

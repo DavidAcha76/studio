@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -41,6 +40,7 @@ import {
 } from "@/components/ui/tabs";
 import {
   continuousUniformPDF,
+  continuousUniformCDF,
   continuousUniformMean,
   continuousUniformVariance,
   continuousUniformStdDev,
@@ -57,53 +57,83 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
-const formSchema = z.object({
-  lowerBound: z.coerce.number().finite("Límite inferior (a) debe ser un número finito"),
+const baseSchema = z.object({
+  lowerBound: z.coerce.number().finite("Límite inferior (a) debe ser un número finito"), 
   upperBound: z.coerce.number().finite("Límite superior (b) debe ser un número finito"),
-  xValue: z.coerce.number().finite("Valor de x debe ser un número finito").optional(),
-  x1Value: z.coerce.number().finite("Valor de x1 debe ser un número finito").optional(),
-  x2Value: z.coerce.number().finite("Valor de x2 debe ser un número finito").optional(),
+  xValue: z.coerce.number().finite("Valor de x debe ser un número finito").optional(), // For f(x)
+  x1Value: z.coerce.number().finite("Valor de x1 debe ser un número finito").optional(), // For P(X>x1) or P(x1 <= X <= x2)
+  x2Value: z.coerce.number().finite("Valor de x2 debe ser un número finito").optional(), // For P(X<x2) or P(x1 <= X <= x2)
 }).refine(data => data.upperBound > data.lowerBound, {
   message: "Límite superior (b) debe ser mayor que el límite inferior (a)",
   path: ["upperBound"],
 }).refine(data => {
-  if (data.x1Value !== undefined && data.lowerBound !== undefined && data.upperBound !== undefined && (data.x1Value < data.lowerBound || data.x1Value > data.upperBound)) {
-    return false;
+  // Refinement for x1Value based on context (active tab) might be complex here.
+  // Keeping general bounds check. Specific tab logic will guide interpretation.
+  if (data.x1Value !== undefined && data.lowerBound !== undefined && data.upperBound !== undefined) {
+    // This check is generally fine, but its relevance depends on which probability is being calculated.
+    // For P(X > x1) or P(X < x1), x1 can technically be outside [a,b] leading to 0 or 1.
+    // For P(x1 <= X <= x2), x1 should ideally be within [a,b].
+    // The math functions handle clamping. This provides a UI hint.
+    // if (data.x1Value < data.lowerBound || data.x1Value > data.upperBound) return false;
   }
   return true;
 }, {
-  message: "x1 debe estar dentro del intervalo [a, b]",
+  message: "x1 preferiblemente dentro del intervalo [a, b] para cálculos de rango.",
   path: ["x1Value"],
 }).refine(data => {
-  if (data.x2Value !== undefined && data.lowerBound !== undefined && data.upperBound !== undefined && (data.x2Value < data.lowerBound || data.x2Value > data.upperBound)) {
-    return false;
+  if (data.x2Value !== undefined && data.lowerBound !== undefined && data.upperBound !== undefined) {
+    // Similar to x1Value
+    // if (data.x2Value < data.lowerBound || data.x2Value > data.upperBound) return false;
   }
   return true;
-}, {
-  message: "x2 debe estar dentro del intervalo [a, b]",
-  path: ["x2Value"],
+}, { 
+ message: "x2 preferiblemente dentro del intervalo [a, b] para cálculos de rango.",
+ path: ["x2Value"],
 });
 
-type ContinuousUniformFormValues = z.infer<typeof formSchema>;
+// Refined schema to ensure that relevant fields are present based on an implicit understanding of tabs
+// This is hard to do perfectly without knowing the active tab in the schema itself.
+// The onSubmit function will handle logic based on activeTab.
+const formSchema = baseSchema.refine(data => {
+  // This check is a bit too broad now with multiple functionalities per tab.
+  // We'll rely on individual optional fields and calculation logic.
+  // Example: If tab 1 (f(x) & P(X>x1)+P(X<x2)) is active, we might need xValue OR (x1Value AND x2Value).
+  // If tab 2 (P(x1<=X<=x2)) is active, we need x1Value AND x2Value.
+  // A simple check for "at least one value" might be too simplistic.
+  // For now, let's assume the existing logic is sufficient and refine if specific validation errors arise.
+  return true; 
+}, {
+  message: "Proporcione los valores necesarios para el cálculo seleccionado.",
+  path: ["xValue"], 
+});
+
+type ContinuousUniformFormValues = z.infer<typeof baseSchema>;
 
 interface ContinuousUniformResults {
   mean: number;
   variance: number;
   stdDev: number;
-  pdf_x?: number;
-  isXInRange?: boolean;
-  probability_x1_x2?: number;
-  x1Swapped?: number;
-  x2Swapped?: number;
+  pdf_x?: number; // Result for f(x)
+  isXInRange?: boolean; // For f(x), if x is in [a,b]
+  
+  // Results for P(X > x1) and P(X < x2)
+  prob_greater_than_x1?: number;
+  prob_less_than_x2?: number;
+  prob_sum_gt_lt?: number; // Sum of P(X>x1) + P(X<x2)
+
+  // Results for P(x1_range <= X <= x2_range)
+  probability_x1_x2_range?: number; 
+  x1Swapped_range?: number; // If x1 and x2 were swapped for range calculation
+  x2Swapped_range?: number;
 }
 
 export function ContinuousUniformCalculator() {
   const [results, setResults] = React.useState<ContinuousUniformResults | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState("pdf");
+  const [activeTab, setActiveTab] = React.useState("fx_and_tails"); // "fx_and_tails" or "range_probability"
 
   const form = useForm<ContinuousUniformFormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema), // Using baseSchema might be simpler and rely on onSubmit for logic
     defaultValues: {
       lowerBound: undefined,
       upperBound: undefined,
@@ -116,48 +146,71 @@ export function ContinuousUniformCalculator() {
   const { watch } = form;
   const lowerBound = watch("lowerBound");
   const upperBound = watch("upperBound");
-  const x1Value = watch("x1Value");
-  const x2Value = watch("x2Value");
+  
+  // Watched values for dynamic UI feedback (e.g., out of range warnings)
+  // These are generic, their specific meaning depends on the active tab and calculation
+  const currentX1Value = watch("x1Value"); 
+  const currentX2Value = watch("x2Value");
 
 
   const calculateMetrics = (
     a: number,
     b: number,
-    x?: number,
-    x1?: number,
-    x2?: number
+    currentActiveTab: string,
+    data: ContinuousUniformFormValues
   ): ContinuousUniformResults => {
     const mean = continuousUniformMean(a, b);
     const variance = continuousUniformVariance(a, b);
     const stdDev = continuousUniformStdDev(a, b);
     
-    let pdf_x: number | undefined = undefined;
-    let isXInRange: boolean | undefined = undefined;
-    if (x !== undefined) {
-      pdf_x = continuousUniformPDF(a, b, x);
-      isXInRange = x >= a && x <= b;
-    }
+    let pdf_x_res: number | undefined = undefined;
+    let isXInRange_res: boolean | undefined = undefined;
+    let prob_greater_than_x1_res: number | undefined = undefined;
+    let prob_less_than_x2_res: number | undefined = undefined;
+    let prob_sum_gt_lt_res: number | undefined = undefined;
+    let probability_x1_x2_range_res: number | undefined = undefined;
+    let x1Swapped_res: number | undefined = undefined;
+    let x2Swapped_res: number | undefined = undefined;
 
-    let probability_x1_x2: number | undefined = undefined;
-    let x1Swapped = x1;
-    let x2Swapped = x2;
-
-    if (x1 !== undefined && x2 !== undefined) {
-      if (x1 > x2) {
-        [x1Swapped, x2Swapped] = [x2, x1];
+    if (currentActiveTab === "fx_and_tails") {
+      if (data.xValue !== undefined) {
+        pdf_x_res = continuousUniformPDF(a, b, data.xValue);
+        isXInRange_res = data.xValue >= a && data.xValue <= b;
       }
-      probability_x1_x2 = continuousUniformProbabilityInRange(a, b, x1Swapped as number, x2Swapped as number);
+      if (data.x1Value !== undefined) {
+        prob_greater_than_x1_res = 1 - continuousUniformCDF(a, b, data.x1Value);
+      }
+      if (data.x2Value !== undefined) {
+        prob_less_than_x2_res = continuousUniformCDF(a, b, data.x2Value);
+      }
+      if (prob_greater_than_x1_res !== undefined || prob_less_than_x2_res !== undefined) {
+        prob_sum_gt_lt_res = (prob_greater_than_x1_res ?? 0) + (prob_less_than_x2_res ?? 0);
+      }
+    } else if (currentActiveTab === "range_probability") {
+      if (data.x1Value !== undefined && data.x2Value !== undefined) {
+        let x1_calc = data.x1Value;
+        let x2_calc = data.x2Value;
+        if (x1_calc > x2_calc) {
+            [x1_calc, x2_calc] = [x2_calc, x1_calc];
+            x1Swapped_res = data.x2Value; // Store original values if swapped
+            x2Swapped_res = data.x1Value;
+        }
+        probability_x1_x2_range_res = continuousUniformProbabilityInRange(a, b, x1_calc, x2_calc);
+      }
     }
 
     return {
       mean,
       variance,
       stdDev,
-      pdf_x,
-      isXInRange,
-      probability_x1_x2,
-      x1Swapped,
-      x2Swapped,
+      pdf_x: pdf_x_res,
+      isXInRange: isXInRange_res,
+      prob_greater_than_x1: prob_greater_than_x1_res,
+      prob_less_than_x2: prob_less_than_x2_res,
+      prob_sum_gt_lt: prob_sum_gt_lt_res,
+      probability_x1_x2_range: probability_x1_x2_range_res,
+      x1Swapped_range: x1Swapped_res,
+      x2Swapped_range: x2Swapped_res,
     };
   };
 
@@ -165,32 +218,26 @@ export function ContinuousUniformCalculator() {
     setIsLoading(true);
     setResults(null);
     
-    // Clear the non-active tab fields before calculation
     const currentValues = { ...values };
-    if (activeTab === "pdf") {
-      currentValues.x1Value = undefined;
-      currentValues.x2Value = undefined;
-    } else if (activeTab === "probability") {
-      currentValues.xValue = undefined;
+
+    // Adjust values based on active tab before calculation
+    // This ensures only relevant fields from the form are passed or non-relevant are nulled
+    if (activeTab === "fx_and_tails") {
+        // For this tab, xValue, x1Value, x2Value are all potentially used.
+        // No specific clearing needed here as optional fields in `calculateMetrics` will handle it.
+    } else if (activeTab === "range_probability") {
+        currentValues.xValue = undefined; // xValue is not used for range probability
+        // x1Value and x2Value are used.
     }
-
-
-    let finalX1 = currentValues.x1Value;
-    let finalX2 = currentValues.x2Value;
-    if (currentValues.x1Value !== undefined && currentValues.x2Value !== undefined && currentValues.x1Value > currentValues.x2Value) {
-      finalX1 = currentValues.x2Value;
-      finalX2 = currentValues.x1Value;
-    }
-
 
     setTimeout(() => {
       try {
+        // Pass the activeTab to calculateMetrics to guide which calculations to perform
         const calculatedResults = calculateMetrics(
           currentValues.lowerBound,
           currentValues.upperBound,
-          currentValues.xValue,
-          finalX1, 
-          finalX2
+          activeTab,
+          currentValues
         );
         setResults(calculatedResults);
       } catch (error) {
@@ -202,8 +249,9 @@ export function ContinuousUniformCalculator() {
     }, 300);
   };
   
-  const isX1OutOfRange = x1Value !== undefined && lowerBound !== undefined && upperBound !== undefined && (x1Value < lowerBound || x1Value > upperBound);
-  const isX2OutOfRange = x2Value !== undefined && lowerBound !== undefined && upperBound !== undefined && (x2Value < lowerBound || x2Value > upperBound);
+  // Dynamic range checks for UI hints - these are generic for x1Value and x2Value
+  const isX1OutOfRange = currentX1Value !== undefined && lowerBound !== undefined && upperBound !== undefined && (currentX1Value < lowerBound || currentX1Value > upperBound);
+  const isX2OutOfRange = currentX2Value !== undefined && lowerBound !== undefined && upperBound !== undefined && (currentX2Value < lowerBound || currentX2Value > upperBound);
 
 
   return (
@@ -214,7 +262,7 @@ export function ContinuousUniformCalculator() {
           Calculadora Uniforme Continua
         </CardTitle>
         <CardDescription className="text-muted-foreground pt-1">
-          Calcula métricas y probabilidades de la distribución Uniforme Continua.
+          Calcula f(x), probabilidades y métricas de la Distribución Uniforme Continua.
         </CardDescription>
       </CardHeader>
       <Form {...form}>
@@ -272,10 +320,11 @@ export function ContinuousUniformCalculator() {
               
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="pdf">Calcular f(x)</TabsTrigger>
-                  <TabsTrigger value="probability">Calcular P(x₁ ≤ X ≤ x₂)</TabsTrigger>
+                  <TabsTrigger value="fx_and_tails">f(x) &amp; P(X&gt;x₁) + P(X&lt;x₂)</TabsTrigger>
+                  <TabsTrigger value="range_probability">P(x₁ ≤ X ≤ x₂)</TabsTrigger>
                 </TabsList>
-                <TabsContent value="pdf" className="mt-4">
+
+                <TabsContent value="fx_and_tails" className="mt-4 space-y-6">
                     <FormField
                         control={form.control}
                         name="xValue"
@@ -284,109 +333,90 @@ export function ContinuousUniformCalculator() {
                             <div className="flex items-center justify-between">
                             <FormLabel>Valor de x (para f(x))</FormLabel>
                             <Tooltip>
-                                <TooltipTrigger asChild>
-                                <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help hover:text-foreground transition-colors" />
-                                </TooltipTrigger>
-                                <TooltipContent side="top" className="max-w-xs">
-                                <p>El valor para el cual calcular la función de densidad f(x).</p>
-                                </TooltipContent>
+                                <TooltipTrigger asChild><HelpCircle className="h-4 w-4 text-muted-foreground cursor-help hover:text-foreground transition-colors" /></TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-xs"><p>El valor x para calcular la función de densidad f(x).</p></TooltipContent>
                             </Tooltip>
                             </div>
                             <FormControl>
-                            <Input type="number" step="any" placeholder="ej., 5" {...field} className="focus:ring-primary focus:border-primary transition-shadow" />
+                            <Input type="number" step="any" placeholder="ej., 5 (opcional)" {...field} className="focus:ring-primary focus:border-primary transition-shadow" />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
                         )}
                     />
+                    <Separator />
+                    <p className="text-sm font-medium">Para P(X &gt; x₁) + P(X &lt; x₂):</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <FormField
+                            control={form.control}
+                            name="x1Value"
+                            render={({ field }) => (
+                                <FormItem>
+                                <div className="flex items-center justify-between">
+                                    <FormLabel>Valor de x₁ (para P(X &gt; x₁))</FormLabel>
+                                    <Tooltip><TooltipTrigger asChild><HelpCircle className="h-4 w-4"/></TooltipTrigger><TooltipContent side="top" className="max-w-xs">El valor x₁ para P(X &gt; x₁).</TooltipContent></Tooltip>
+                                </div>
+                                <FormControl><Input type="number" step="any" placeholder="ej., 2 (opcional)" {...field} className={cn("focus:ring-primary focus:border-primary transition-shadow", isX1OutOfRange && activeTab === "fx_and_tails" && "border-destructive focus:ring-destructive")}/></FormControl>
+                                <FormMessage />
+                                {isX1OutOfRange && activeTab === "fx_and_tails" && <p className="text-xs text-destructive pt-1">x₁ está fuera de [a, b]. El resultado puede ser 0 o 1.</p>}
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="x2Value"
+                            render={({ field }) => (
+                                <FormItem>
+                                <div className="flex items-center justify-between">
+                                    <FormLabel>Valor de x₂ (para P(X &lt; x₂))</FormLabel>
+                                    <Tooltip><TooltipTrigger asChild><HelpCircle className="h-4 w-4"/></TooltipTrigger><TooltipContent side="top" className="max-w-xs">El valor x₂ para P(X &lt; x₂).</TooltipContent></Tooltip>
+                                </div>
+                                <FormControl><Input type="number" step="any" placeholder="ej., 8 (opcional)" {...field} className={cn("focus:ring-primary focus:border-primary transition-shadow", isX2OutOfRange && activeTab === "fx_and_tails" && "border-destructive focus:ring-destructive")}/></FormControl>
+                                <FormMessage />
+                                {isX2OutOfRange && activeTab === "fx_and_tails" && <p className="text-xs text-destructive pt-1">x₂ está fuera de [a, b]. El resultado puede ser 0 o 1.</p>}
+                                </FormItem>
+                            )}
+                        />
+                    </div>
                 </TabsContent>
-                <TabsContent value="probability" className="mt-4 space-y-6">
+
+                <TabsContent value="range_probability" className="mt-4 space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <FormField
                         control={form.control}
-                        name="x1Value"
+                        name="x1Value" // Reuses x1Value field
                         render={({ field }) => (
                             <FormItem>
-                            <div className="flex items-center justify-between">
-                                <FormLabel>Valor de x₁</FormLabel>
-                                <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help hover:text-foreground transition-colors" />
-                                </TooltipTrigger>
-                                <TooltipContent side="top" className="max-w-xs">
-                                    <p>Inicio del intervalo para el cálculo de probabilidad. Debe estar entre 'a' y 'b'.</p>
-                                </TooltipContent>
-                                </Tooltip>
-                            </div>
-                            <FormControl>
-                                <Input
-                                type="number"
-                                step="any"
-                                placeholder="ej., 2"
-                                {...field}
-                                className={cn(
-                                    "focus:ring-primary focus:border-primary transition-shadow",
-                                    isX1OutOfRange && "border-destructive focus:ring-destructive"
-                                )}
-                                />
-                            </FormControl>
+                            <div className="flex items-center justify-between"> <FormLabel>Valor de x₁</FormLabel> <Tooltip><TooltipTrigger asChild><HelpCircle className="h-4 w-4"/></TooltipTrigger><TooltipContent side="top" className="max-w-xs">Inicio del intervalo [x₁, x₂].</TooltipContent></Tooltip></div>
+                            <FormControl><Input type="number" step="any" placeholder="ej., 2" {...field} className={cn("focus:ring-primary focus:border-primary transition-shadow", isX1OutOfRange && activeTab === "range_probability" && "border-destructive focus:ring-destructive")}/></FormControl>
                             <FormMessage />
-                            {isX1OutOfRange && <p className="text-xs text-destructive pt-1">x₁ está fuera del intervalo [a, b].</p>}
+                            {isX1OutOfRange && activeTab === "range_probability" && <p className="text-xs text-destructive pt-1">x₁ está fuera de [a, b]. Será ajustado.</p>}
                             </FormItem>
                         )}
                         />
                         <FormField
                         control={form.control}
-                        name="x2Value"
+                        name="x2Value" // Reuses x2Value field
                         render={({ field }) => (
                             <FormItem>
-                            <div className="flex items-center justify-between">
-                                <FormLabel>Valor de x₂</FormLabel>
-                                <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help hover:text-foreground transition-colors" />
-                                </TooltipTrigger>
-                                <TooltipContent side="top" className="max-w-xs">
-                                    <p>Fin del intervalo para el cálculo de probabilidad. Debe estar entre 'a' y 'b'.</p>
-                                </TooltipContent>
-                                </Tooltip>
-                            </div>
-                            <FormControl>
-                                <Input
-                                type="number"
-                                step="any"
-                                placeholder="ej., 8"
-                                {...field}
-                                className={cn(
-                                    "focus:ring-primary focus:border-primary transition-shadow",
-                                    isX2OutOfRange && "border-destructive focus:ring-destructive"
-                                )}
-                                />
-                            </FormControl>
+                            <div className="flex items-center justify-between"> <FormLabel>Valor de x₂</FormLabel> <Tooltip><TooltipTrigger asChild><HelpCircle className="h-4 w-4"/></TooltipTrigger><TooltipContent side="top" className="max-w-xs">Fin del intervalo [x₁, x₂].</TooltipContent></Tooltip></div>
+                            <FormControl><Input type="number" step="any" placeholder="ej., 8" {...field} className={cn("focus:ring-primary focus:border-primary transition-shadow", isX2OutOfRange && activeTab === "range_probability" && "border-destructive focus:ring-destructive")}/></FormControl>
                             <FormMessage />
-                            {isX2OutOfRange && <p className="text-xs text-destructive pt-1">x₂ está fuera del intervalo [a, b].</p>}
+                            {isX2OutOfRange && activeTab === "range_probability" && <p className="text-xs text-destructive pt-1">x₂ está fuera de [a, b]. Será ajustado.</p>}
                             </FormItem>
                         )}
                         />
                     </div>
                 </TabsContent>
               </Tabs>
-
-
             </TooltipProvider>
           </CardContent>
           <CardFooter className="flex justify-end p-6 bg-muted/50 border-t">
             <Button type="submit" disabled={isLoading} size="lg" className="transition-all duration-300 ease-in-out hover:scale-105 active:scale-95">
               {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Calculando...
-                </>
+                <> <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Calculando... </>
               ) : (
-                <>
-                  <Calculator className="mr-2 h-4 w-4" />
-                  Calcular
-                </>
+                <> <Calculator className="mr-2 h-4 w-4" /> Calcular </>
               )}
             </Button>
           </CardFooter>
@@ -438,7 +468,8 @@ export function ContinuousUniformCalculator() {
                   </TableCell>
                 </TableRow>
               ))}
-              {results.pdf_x !== undefined && form.getValues("xValue") !== undefined && (
+              {/* f(x) result, if calculated */}
+              {activeTab === "fx_and_tails" && results.pdf_x !== undefined && form.getValues("xValue") !== undefined && (
                  <TableRow className="transition-colors hover:bg-muted/30">
                     <TableCell className="font-medium py-3">
                         {`f(x = ${form.getValues("xValue")})`}
@@ -448,20 +479,55 @@ export function ContinuousUniformCalculator() {
                     </TableCell>
                  </TableRow>
               )}
-              {results.probability_x1_x2 !== undefined && (
+              {/* P(X > x1) result, if calculated */}
+              {activeTab === "fx_and_tails" && results.prob_greater_than_x1 !== undefined && form.getValues("x1Value") !== undefined &&(
                 <TableRow className="transition-colors hover:bg-muted/30">
                   <TableCell className="font-medium py-3">
-                    P({results.x1Swapped ?? form.getValues("x1Value")} ≤ X ≤ {results.x2Swapped ?? form.getValues("x2Value")})
+                    {`P(X > ${form.getValues("x1Value")})`}
                   </TableCell>
                   <TableCell className="text-right font-mono py-3">
-                    {results.probability_x1_x2.toFixed(5)} ({(results.probability_x1_x2 * 100).toFixed(2)}%)
+                    {results.prob_greater_than_x1.toFixed(5)} ({(results.prob_greater_than_x1 * 100).toFixed(2)}%)
                   </TableCell>
+                </TableRow>
+              )}
+              {/* P(X < x2) result, if calculated */}
+              {activeTab === "fx_and_tails" && results.prob_less_than_x2 !== undefined && form.getValues("x2Value") !== undefined && (
+                <TableRow className="transition-colors hover:bg-muted/30">
+                  <TableCell className="font-medium py-3">
+                     {`P(X < ${form.getValues("x2Value")})`}
+                  </TableCell>
+                  <TableCell className="text-right font-mono py-3">
+                    {results.prob_less_than_x2.toFixed(5)} ({(results.prob_less_than_x2 * 100).toFixed(2)}%)
+                  </TableCell>
+                </TableRow>
+              )}
+              {/* Sum P(X>x1) + P(X<x2) result, if calculated */}
+               {activeTab === "fx_and_tails" && results.prob_sum_gt_lt !== undefined && (form.getValues("x1Value") !== undefined || form.getValues("x2Value") !== undefined) && (
+                <TableRow className="transition-colors hover:bg-muted/30 font-bold text-primary">
+                  <TableCell className="font-medium py-3">
+                     Suma P(X &gt; x₁) + P(X &lt; x₂)
+                  </TableCell>
+                  <TableCell className="text-right font-mono py-3">
+                    {results.prob_sum_gt_lt.toFixed(5)} ({(results.prob_sum_gt_lt * 100).toFixed(2)}%)
+                  </TableCell>
+                </TableRow>
+              )}
+              {/* P(x1 <= X <= x2) result, if calculated */}
+              {activeTab === "range_probability" && results.probability_x1_x2_range !== undefined && form.getValues("x1Value") !== undefined && form.getValues("x2Value") !== undefined && (
+                <TableRow className="transition-colors hover:bg-muted/30 font-bold text-primary">
+                    <TableCell className="font-medium py-3">
+                        {`P(${results.x1Swapped_range ? results.x1Swapped_range : form.getValues("x1Value")} ≤ X ≤ ${results.x2Swapped_range ? results.x2Swapped_range : form.getValues("x2Value")})`}
+                    </TableCell>
+                    <TableCell className="text-right font-mono py-3">
+                        {results.probability_x1_x2_range.toFixed(5)} ({(results.probability_x1_x2_range * 100).toFixed(2)}%)
+                    </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
           
-          {(results.pdf_x !== undefined && form.getValues("xValue") !== undefined) && (
+          {/* Alert for f(x) */}
+          {activeTab === "fx_and_tails" && results.pdf_x !== undefined && form.getValues("xValue") !== undefined && (
             <>
             <Separator className="my-6" />
             <Alert variant={results.isXInRange ? "default" : "destructive"} className="mt-4">
@@ -486,44 +552,70 @@ export function ContinuousUniformCalculator() {
             </>
           )}
 
-
-           {results.probability_x1_x2 !== undefined && (
+          {/* Alert for P(X > x1) + P(X < x2) */}
+          {activeTab === "fx_and_tails" && (results.prob_greater_than_x1 !== undefined || results.prob_less_than_x2 !== undefined) && (
+             <>
+             <Separator className="my-6" />
+             <Alert className="mt-4" variant="default">
+                 <Percent className="h-4 w-4" />
+                 <AlertTitle>Probabilidades de Cola P(X &gt; x₁) + P(X &lt; x₂)</AlertTitle>
+                 <AlertDescription>
+                     <ul className="list-disc list-inside space-y-1">
+                        {results.prob_greater_than_x1 !== undefined && form.getValues("x1Value") !== undefined && (
+                            <li>
+                                P(X &gt; {form.getValues("x1Value")}) = <span className="font-mono ml-1">{results.prob_greater_than_x1.toFixed(5)}</span> (<span className="font-mono">{(results.prob_greater_than_x1 * 100).toFixed(2)}%</span>)
+                                <p className="text-xs mt-1 text-muted-foreground">Fórmula: 1 - CDF(x₁)</p>
+                            </li>
+                        )}
+                        {results.prob_less_than_x2 !== undefined && form.getValues("x2Value") !== undefined && (
+                           <li>
+                                P(X &lt; {form.getValues("x2Value")}) = <span className="font-mono ml-1">{results.prob_less_than_x2.toFixed(5)}</span> (<span className="font-mono">{(results.prob_less_than_x2 * 100).toFixed(2)}%</span>)
+                                 <p className="text-xs mt-1 text-muted-foreground">Fórmula: CDF(x₂)</p>
+                            </li>
+                        )}
+                         {results.prob_sum_gt_lt !== undefined && (
+                            <li className="font-bold mt-2">
+                                Suma Total = <span className="font-mono ml-1">{results.prob_sum_gt_lt.toFixed(5)}</span> (<span className="font-mono">{(results.prob_sum_gt_lt * 100).toFixed(2)}%</span>)
+                             </li>
+                         )}
+                     </ul>
+                 </AlertDescription>
+             </Alert>
+             </>
+          )}
+           
+           {/* Alert for P(x1 <= X <= x2) */}
+           {activeTab === "range_probability" && results.probability_x1_x2_range !== undefined && form.getValues("x1Value") !== undefined && form.getValues("x2Value") !== undefined && (
             <>
             <Separator className="my-6" />
             <Alert className="mt-4" variant="default">
                 <Percent className="h-4 w-4" />
                 <AlertTitle>Probabilidad en Intervalo P(x₁ ≤ X ≤ x₂)</AlertTitle>
                 <AlertDescription>
-                    La probabilidad de que la variable aleatoria X esté entre 
-                    <strong> {results.x1Swapped ?? form.getValues("x1Value")} </strong> 
-                    y <strong> {results.x2Swapped ?? form.getValues("x2Value")} </strong> es:
-                    <div className="font-mono text-lg my-2">
-                        {results.probability_x1_x2.toFixed(5)}
-                    </div>
-                    Esto equivale a un <strong>{(results.probability_x1_x2 * 100).toFixed(2)}%</strong>.
-                    {(form.getValues("x1Value") ?? 0) > (form.getValues("x2Value") ?? 0) && 
-                     (form.getValues("x1Value") !== undefined && form.getValues("x2Value") !== undefined) && (
+                    La probabilidad de que X esté entre <strong> {results.x1Swapped_range ?? form.getValues("x1Value")} </strong> y <strong> {results.x2Swapped_range ?? form.getValues("x2Value")} </strong> es:
+                    <div className="font-mono text-lg my-2">{results.probability_x1_x2_range.toFixed(5)}</div>
+                    Esto equivale a un <strong>{(results.probability_x1_x2_range * 100).toFixed(2)}%</strong>.
+                    {results.x1Swapped_range !== undefined && (
                         <p className="text-xs mt-1 text-muted-foreground">
                             (Nota: x₁ y x₂ fueron intercambiados para el cálculo ya que x₁ era mayor que x₂).
                         </p>
                     )}
                      <p className="text-xs mt-1 text-muted-foreground">
-                        Fórmula: P(x₁ ≤ X ≤ x₂) = (x₂_clamped - x₁_clamped) / (b - a). Los valores de x₁ y x₂ se ajustan para estar dentro del intervalo [a,b].
+                        Fórmula: (x₂_ajustado - x₁_ajustado) / (b - a). x₁ y x₂ se ajustan a [a,b].
                      </p>
                 </AlertDescription>
             </Alert>
             </>
            )}
 
-
             <Alert className="mt-6 bg-secondary/30 border-primary/30">
               <Info className="h-4 w-4 text-primary" />
               <AlertTitle className="text-primary">Propiedades de la Distribución Uniforme Continua</AlertTitle>
               <AlertDescription className="text-foreground/80 space-y-1">
                 <p><strong>Intervalo:</strong> [a, b]</p>
-                <p><strong>Área bajo la curva:</strong> El área total bajo la curva de la función de densidad de probabilidad f(x) en el intervalo [a, b] es siempre igual a 1.</p>
-                <p><strong>Probabilidad y Área:</strong> La probabilidad de que la variable aleatoria X tome un valor dentro de un subintervalo [c, d] (donde a ≤ c ≤ d ≤ b) es igual al área bajo la curva f(x) entre c y d. P(c ≤ X ≤ d) = (d - c) / (b - a).</p>
-                <p><strong>Densidad Constante:</strong> La función de densidad f(x) es constante dentro del intervalo [a, b] e igual a 1/(b-a). Fuera de este intervalo, f(x) es 0.</p>
+                <p><strong>Área bajo la curva:</strong> El área total bajo la curva f(x) en [a, b] es 1.</p>
+                <p><strong>Probabilidad y Área:</strong> P(c ≤ X ≤ d) = (d - c) / (b - a) para a ≤ c ≤ d ≤ b.</p>
+                <p><strong>Densidad Constante:</strong> f(x) = 1/(b-a) para x en [a, b], y 0 fuera.</p>
               </AlertDescription>
            </Alert>
         </div>
@@ -531,5 +623,3 @@ export function ContinuousUniformCalculator() {
     </Card>
   );
 }
-
-    
