@@ -1,11 +1,10 @@
-
 "use client";
 
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Calculator, HelpCircle, Info, Loader2, Sigma, LineChart } from "lucide-react";
+import { Calculator, HelpCircle, Info, Loader2, Sigma, LineChart, Percent } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -38,6 +37,7 @@ import {
   continuousUniformMean,
   continuousUniformVariance,
   continuousUniformStdDev,
+  continuousUniformProbabilityInRange,
 } from "@/lib/math-utils";
 import {
   Tooltip,
@@ -48,14 +48,33 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
 const formSchema = z.object({
   lowerBound: z.coerce.number().finite("Límite inferior (a) debe ser un número finito"),
   upperBound: z.coerce.number().finite("Límite superior (b) debe ser un número finito"),
   xValue: z.coerce.number().finite("Valor de x debe ser un número finito"),
+  x1Value: z.coerce.number().finite("Valor de x1 debe ser un número finito").optional(),
+  x2Value: z.coerce.number().finite("Valor de x2 debe ser un número finito").optional(),
 }).refine(data => data.upperBound > data.lowerBound, {
   message: "Límite superior (b) debe ser mayor que el límite inferior (a)",
   path: ["upperBound"],
+}).refine(data => {
+  if (data.x1Value !== undefined && (data.x1Value < data.lowerBound || data.x1Value > data.upperBound)) {
+    return false;
+  }
+  return true;
+}, {
+  message: "x1 debe estar dentro del intervalo [a, b]",
+  path: ["x1Value"],
+}).refine(data => {
+  if (data.x2Value !== undefined && (data.x2Value < data.lowerBound || data.x2Value > data.upperBound)) {
+    return false;
+  }
+  return true;
+}, {
+  message: "x2 debe estar dentro del intervalo [a, b]",
+  path: ["x2Value"],
 });
 
 type ContinuousUniformFormValues = z.infer<typeof formSchema>;
@@ -66,6 +85,9 @@ interface ContinuousUniformResults {
   stdDev: number;
   pdf_x: number;
   isXInRange: boolean;
+  probability_x1_x2?: number;
+  x1Swapped?: number;
+  x2Swapped?: number;
 }
 
 export function ContinuousUniformCalculator() {
@@ -78,15 +100,41 @@ export function ContinuousUniformCalculator() {
       lowerBound: undefined,
       upperBound: undefined,
       xValue: undefined,
+      x1Value: undefined,
+      x2Value: undefined,
     },
   });
 
-  const calculateMetrics = (a: number, b: number, x: number): ContinuousUniformResults => {
+  const { watch } = form;
+  const lowerBound = watch("lowerBound");
+  const upperBound = watch("upperBound");
+  const x1Value = watch("x1Value");
+  const x2Value = watch("x2Value");
+
+
+  const calculateMetrics = (
+    a: number,
+    b: number,
+    x: number,
+    x1?: number,
+    x2?: number
+  ): ContinuousUniformResults => {
     const mean = continuousUniformMean(a, b);
     const variance = continuousUniformVariance(a, b);
     const stdDev = continuousUniformStdDev(a, b);
     const pdf_x = continuousUniformPDF(a, b, x);
     const isXInRange = x >= a && x <= b;
+
+    let probability_x1_x2: number | undefined = undefined;
+    let x1Swapped = x1;
+    let x2Swapped = x2;
+
+    if (x1 !== undefined && x2 !== undefined) {
+      if (x1 > x2) {
+        [x1Swapped, x2Swapped] = [x2, x1];
+      }
+      probability_x1_x2 = continuousUniformProbabilityInRange(a, b, x1Swapped as number, x2Swapped as number);
+    }
 
     return {
       mean,
@@ -94,18 +142,36 @@ export function ContinuousUniformCalculator() {
       stdDev,
       pdf_x,
       isXInRange,
+      probability_x1_x2,
+      x1Swapped,
+      x2Swapped,
     };
   };
 
   const onSubmit = (values: ContinuousUniformFormValues) => {
     setIsLoading(true);
     setResults(null);
+
+    // Auto-swap x1 and x2 if x1 > x2 and both are defined
+    let finalX1 = values.x1Value;
+    let finalX2 = values.x2Value;
+    if (values.x1Value !== undefined && values.x2Value !== undefined && values.x1Value > values.x2Value) {
+      finalX1 = values.x2Value;
+      finalX2 = values.x1Value;
+      // Update form values if you want the UI to reflect the swap immediately, though calculation handles it
+      // form.setValue("x1Value", finalX1);
+      // form.setValue("x2Value", finalX2);
+    }
+
+
     setTimeout(() => {
       try {
         const calculatedResults = calculateMetrics(
           values.lowerBound,
           values.upperBound,
-          values.xValue
+          values.xValue,
+          finalX1, // Use potentially swapped values
+          finalX2
         );
         setResults(calculatedResults);
       } catch (error) {
@@ -116,6 +182,10 @@ export function ContinuousUniformCalculator() {
       }
     }, 300);
   };
+  
+  const isX1OutOfRange = x1Value !== undefined && lowerBound !== undefined && upperBound !== undefined && (x1Value < lowerBound || x1Value > upperBound);
+  const isX2OutOfRange = x2Value !== undefined && lowerBound !== undefined && upperBound !== undefined && (x2Value < lowerBound || x2Value > upperBound);
+
 
   return (
     <Card className="shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:-translate-y-1 rounded-xl overflow-hidden">
@@ -125,72 +195,75 @@ export function ContinuousUniformCalculator() {
           Calculadora Uniforme Continua
         </CardTitle>
         <CardDescription className="text-muted-foreground pt-1">
-          Calcula métricas de la distribución Uniforme Continua.
+          Calcula métricas y probabilidades de la distribución Uniforme Continua.
         </CardDescription>
       </CardHeader>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <CardContent className="p-6 space-y-6">
             <TooltipProvider delayDuration={200}>
-              <FormField
-                control={form.control}
-                name="lowerBound"
-                render={({ field }) => (
-                  <FormItem>
-                    <div className="flex items-center justify-between">
-                      <FormLabel>Límite Inferior (a)</FormLabel>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help hover:text-foreground transition-colors" />
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-xs">
-                          <p>El valor mínimo del intervalo [a, b].</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </div>
-                    <FormControl>
-                      <Input type="number" step="any" placeholder="ej., 0" {...field} className="focus:ring-primary focus:border-primary transition-shadow" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="upperBound"
-                render={({ field }) => (
-                  <FormItem>
-                    <div className="flex items-center justify-between">
-                      <FormLabel>Límite Superior (b)</FormLabel>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help hover:text-foreground transition-colors" />
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-xs">
-                          <p>El valor máximo del intervalo [a, b].</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </div>
-                    <FormControl>
-                      <Input type="number" step="any" placeholder="ej., 10" {...field} className="focus:ring-primary focus:border-primary transition-shadow" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="lowerBound"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center justify-between">
+                        <FormLabel>Límite Inferior (a)</FormLabel>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help hover:text-foreground transition-colors" />
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-xs">
+                            <p>El valor mínimo del intervalo [a, b].</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <FormControl>
+                        <Input type="number" step="any" placeholder="ej., 0" {...field} className="focus:ring-primary focus:border-primary transition-shadow" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="upperBound"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center justify-between">
+                        <FormLabel>Límite Superior (b)</FormLabel>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help hover:text-foreground transition-colors" />
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-xs">
+                            <p>El valor máximo del intervalo [a, b].</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <FormControl>
+                        <Input type="number" step="any" placeholder="ej., 10" {...field} className="focus:ring-primary focus:border-primary transition-shadow" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
               <FormField
                 control={form.control}
                 name="xValue"
                 render={({ field }) => (
                   <FormItem>
                     <div className="flex items-center justify-between">
-                      <FormLabel>Valor de x</FormLabel>
+                      <FormLabel>Valor de x (para f(x))</FormLabel>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help hover:text-foreground transition-colors" />
                         </TooltipTrigger>
                         <TooltipContent side="top" className="max-w-xs">
-                          <p>El valor para el cual calcular f(x).</p>
+                          <p>El valor para el cual calcular la función de densidad f(x).</p>
                         </TooltipContent>
                       </Tooltip>
                     </div>
@@ -201,6 +274,78 @@ export function ContinuousUniformCalculator() {
                   </FormItem>
                 )}
               />
+              
+              <Separator className="my-6"/>
+              <p className="text-sm font-medium text-primary">Calcular Probabilidad P(x₁ ≤ X ≤ x₂)</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="x1Value"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center justify-between">
+                        <FormLabel>Valor de x₁</FormLabel>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help hover:text-foreground transition-colors" />
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-xs">
+                            <p>Inicio del intervalo para el cálculo de probabilidad. Debe estar entre 'a' y 'b'.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="any"
+                          placeholder="ej., 2"
+                          {...field}
+                          className={cn(
+                            "focus:ring-primary focus:border-primary transition-shadow",
+                            isX1OutOfRange && "border-destructive focus:ring-destructive"
+                          )}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                      {isX1OutOfRange && <p className="text-xs text-destructive pt-1">x₁ está fuera del intervalo [a, b].</p>}
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="x2Value"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center justify-between">
+                        <FormLabel>Valor de x₂</FormLabel>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help hover:text-foreground transition-colors" />
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-xs">
+                            <p>Fin del intervalo para el cálculo de probabilidad. Debe estar entre 'a' y 'b'.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <FormControl>
+                         <Input
+                          type="number"
+                          step="any"
+                          placeholder="ej., 8"
+                          {...field}
+                          className={cn(
+                            "focus:ring-primary focus:border-primary transition-shadow",
+                            isX2OutOfRange && "border-destructive focus:ring-destructive"
+                          )}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                       {isX2OutOfRange && <p className="text-xs text-destructive pt-1">x₂ está fuera del intervalo [a, b].</p>}
+                    </FormItem>
+                  )}
+                />
+              </div>
             </TooltipProvider>
           </CardContent>
           <CardFooter className="flex justify-end p-6 bg-muted/50 border-t">
@@ -225,7 +370,7 @@ export function ContinuousUniformCalculator() {
         <div className="mt-6 p-6 border-t space-y-4">
           <Skeleton className="h-6 w-1/3" />
           <div className="space-y-2">
-            {[...Array(4)].map((_, i) => (
+            {[...Array(5)].map((_, i) => ( // Increased skeleton rows for new probability
               <div key={i} className="flex justify-between">
                 <Skeleton className="h-5 w-1/4" />
                 <Skeleton className="h-5 w-1/5" />
@@ -267,9 +412,21 @@ export function ContinuousUniformCalculator() {
                   </TableCell>
                 </TableRow>
               ))}
+              {results.probability_x1_x2 !== undefined && (
+                <TableRow className="transition-colors hover:bg-muted/30">
+                  <TableCell className="font-medium py-3">
+                    P({results.x1Swapped ?? form.getValues("x1Value")} ≤ X ≤ {results.x2Swapped ?? form.getValues("x2Value")})
+                  </TableCell>
+                  <TableCell className="text-right font-mono py-3">
+                    {results.probability_x1_x2.toFixed(5)} ({(results.probability_x1_x2 * 100).toFixed(2)}%)
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
+          
           <Separator className="my-6" />
+          
            <Alert variant={results.isXInRange ? "default" : "destructive"} className="mt-4">
              <Info className="h-4 w-4" />
              <AlertTitle>Función de Densidad de Probabilidad (f(x))</AlertTitle>
@@ -289,6 +446,31 @@ export function ContinuousUniformCalculator() {
                 }
              </AlertDescription>
            </Alert>
+
+           {results.probability_x1_x2 !== undefined && (
+            <Alert className="mt-6" variant="default">
+                <Percent className="h-4 w-4" />
+                <AlertTitle>Probabilidad en Intervalo P(x₁ ≤ X ≤ x₂)</AlertTitle>
+                <AlertDescription>
+                    La probabilidad de que la variable aleatoria X esté entre 
+                    <strong> {results.x1Swapped ?? form.getValues("x1Value")} </strong> 
+                    y <strong> {results.x2Swapped ?? form.getValues("x2Value")} </strong> es:
+                    <div className="font-mono text-lg my-2">
+                        {results.probability_x1_x2.toFixed(5)}
+                    </div>
+                    Esto equivale a un <strong>{(results.probability_x1_x2 * 100).toFixed(2)}%</strong>.
+                    {(form.getValues("x1Value") ?? 0) > (form.getValues("x2Value") ?? 0) && (
+                        <p className="text-xs mt-1 text-muted-foreground">
+                            (Nota: x₁ y x₂ fueron intercambiados para el cálculo ya que x₁ era mayor que x₂).
+                        </p>
+                    )}
+                     <p className="text-xs mt-1 text-muted-foreground">
+                        Fórmula: P(x₁ ≤ X ≤ x₂) = (x₂_clamped - x₁_clamped) / (b - a). Los valores de x₁ y x₂ se ajustan para estar dentro del intervalo [a,b].
+                     </p>
+                </AlertDescription>
+            </Alert>
+           )}
+
 
             <Alert className="mt-6 bg-secondary/30 border-primary/30">
               <Info className="h-4 w-4 text-primary" />

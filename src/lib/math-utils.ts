@@ -237,6 +237,43 @@ export function continuousUniformPDF(a: number, b: number, x: number): number {
 }
 
 /**
+ * Calculates the probability P(x1 <= X <= x2) for a Continuous Uniform Distribution.
+ * P(x1 <= X <= x2) = (x2_clamped - x1_clamped) / (b - a)
+ * Values of x1 and x2 are clamped to the interval [a, b].
+ * If x1 > x2, their values are swapped.
+ * @param a Lower bound of the distribution interval.
+ * @param b Upper bound of the distribution interval.
+ * @param val1 First value of the sub-interval.
+ * @param val2 Second value of the sub-interval.
+ * @returns The probability P(x1 <= X <= x2).
+ */
+export function continuousUniformProbabilityInRange(a: number, b: number, val1: number, val2: number): number {
+  if (a >= b) {
+    return 0; // Invalid distribution interval
+  }
+
+  let x1 = val1;
+  let x2 = val2;
+
+  // Swap if x1 > x2
+  if (x1 > x2) {
+    [x1, x2] = [x2, x1];
+  }
+
+  // Clamp x1 and x2 to the interval [a, b]
+  const x1Clamped = Math.max(a, Math.min(b, x1));
+  const x2Clamped = Math.max(a, Math.min(b, x2));
+  
+  // If the clamped interval is invalid (e.g. x2_clamped < x1_clamped, which can happen if original range was outside [a,b])
+  if (x2Clamped <= x1Clamped) {
+    return 0;
+  }
+
+  return (x2Clamped - x1Clamped) / (b - a);
+}
+
+
+/**
  * Calculates the mean (expected value) of a Continuous Uniform Distribution.
  * E(X) = (a + b) / 2
  * @param a Lower bound of the interval.
