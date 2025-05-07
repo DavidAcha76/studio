@@ -5,7 +5,7 @@ import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Calculator, HelpCircle, Info, Loader2, Sigma, LineChart, Percent } from "lucide-react";
+import { Calculator, HelpCircle, Info, Loader2, Sigma, LineChart, Percent, RectangleHorizontal, AreaChart } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -45,6 +45,7 @@ import {
   continuousUniformVariance,
   continuousUniformStdDev,
   continuousUniformProbabilityInRange,
+  continuousUniformPDF, // Added PDF function
 } from "@/lib/math-utils";
 import {
   Tooltip,
@@ -56,58 +57,50 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
+import { CartesianGrid, Line, LineChart as RechartsLineChart, XAxis, YAxis } from "recharts";
+
 
 const baseSchema = z.object({
   lowerBound: z.coerce.number().finite("Límite inferior (a) debe ser un número finito"), 
   upperBound: z.coerce.number().finite("Límite superior (b) debe ser un número finito"),
-  x1Value: z.coerce.number().finite("Valor de x1 debe ser un número finito").optional(), // For P(X>x1) or P(x1 <= X <= x2)
-  x2Value: z.coerce.number().finite("Valor de x2 debe ser un número finito").optional(), // For P(X<x2) or P(x1 <= X <= x2)
+  x1Value: z.coerce.number().finite("Valor de x1 debe ser un número finito").optional(), 
+  x2Value: z.coerce.number().finite("Valor de x2 debe ser un número finito").optional(), 
 }).refine(data => data.upperBound > data.lowerBound, {
-  message: "Límite superior (b) debe ser mayor que el límite inferior (a)",
+  message: "Límite superior (b) debe ser mayor que el límite inferior (a) para una distribución válida.",
   path: ["upperBound"],
-}).refine(data => {
-  if (data.x1Value !== undefined && data.lowerBound !== undefined && data.upperBound !== undefined) {
-    // UI hint, math functions handle clamping.
-  }
-  return true;
-}, {
-  message: "x1 preferiblemente dentro del intervalo [a, b] para cálculos de rango.",
-  path: ["x1Value"],
-}).refine(data => {
-  if (data.x2Value !== undefined && data.lowerBound !== undefined && data.upperBound !== undefined) {
-    // UI hint, math functions handle clamping.
-  }
-  return true;
-}, { 
- message: "x2 preferiblemente dentro del intervalo [a, b] para cálculos de rango.",
- path: ["x2Value"],
 });
 
 
-const formSchema = baseSchema; // Simplified, main logic in onSubmit
+const formSchema = baseSchema; 
 
 type ContinuousUniformFormValues = z.infer<typeof baseSchema>;
 
 interface ContinuousUniformResults {
+  lowerBound: number; // Added for chart
+  upperBound: number; // Added for chart
   mean: number;
   variance: number;
   stdDev: number;
-  
-  // Results for P(X > x1) and P(X < x2)
   prob_greater_than_x1?: number;
   prob_less_than_x2?: number;
-  prob_sum_gt_lt?: number; // Sum of P(X>x1) + P(X<x2)
-
-  // Results for P(x1_range <= X <= x2_range)
+  prob_sum_gt_lt?: number; 
   probability_x1_x2_range?: number; 
-  x1Swapped_range?: number; // If x1 and x2 were swapped for range calculation
+  x1Swapped_range?: number; 
   x2Swapped_range?: number;
 }
 
 export function ContinuousUniformCalculator() {
   const [results, setResults] = React.useState<ContinuousUniformResults | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState("tail_probabilities"); // "tail_probabilities" or "range_probability"
+  const [activeTab, setActiveTab] = React.useState("tail_probabilities"); 
+  const [chartData, setChartData] = React.useState<Array<{ x: number; pdf: number }> | null>(null);
+
 
   const form = useForm<ContinuousUniformFormValues>({
     resolver: zodResolver(formSchema), 
@@ -122,9 +115,49 @@ export function ContinuousUniformCalculator() {
   const { watch } = form;
   const lowerBound = watch("lowerBound");
   const upperBound = watch("upperBound");
-  
   const currentX1Value = watch("x1Value"); 
   const currentX2Value = watch("x2Value");
+
+  React.useEffect(() => {
+    if (results && results.lowerBound !== undefined && results.upperBound !== undefined) {
+      const { lowerBound: a, upperBound: b } = results;
+      const dataPoints = [];
+      
+      if (a < b) {
+        const pdfVal = continuousUniformPDF(a, b, a); // PDF value within [a,b]
+        const range = b - a;
+        const padding = range * 0.25 > 0 ? range * 0.25 : 0.5; // Ensure padding is positive, relative to range or fixed
+        
+        // Points to define the rectangle shape for the PDF
+        dataPoints.push({ x: parseFloat((a - padding).toFixed(4)), pdf: 0 });
+        dataPoints.push({ x: parseFloat(a.toFixed(4)), pdf: 0 }); // Line starts from x-axis at a
+        dataPoints.push({ x: parseFloat(a.toFixed(4)), pdf: parseFloat(pdfVal.toFixed(5)) }); // Jumps to PDF value at a
+        dataPoints.push({ x: parseFloat(b.toFixed(4)), pdf: parseFloat(pdfVal.toFixed(5)) }); // Stays at PDF value until b
+        dataPoints.push({ x: parseFloat(b.toFixed(4)), pdf: 0 }); // Drops to x-axis at b
+        dataPoints.push({ x: parseFloat((b + padding).toFixed(4)), pdf: 0 });
+      } else {
+        // Handle a >= b: PDF is 0 everywhere. Show a flat line around the input values.
+        const displayA = a ?? 0;
+        const displayB = b ?? (displayA > 0 ? displayA + 1 : 1);
+        const midPoint = (displayA + displayB) / 2;
+        const padding = Math.abs(displayB - displayA) * 0.5 > 0 ? Math.abs(displayB - displayA) * 0.5 : 1;
+
+        dataPoints.push({ x: parseFloat((midPoint - padding).toFixed(4)), pdf: 0 });
+        dataPoints.push({ x: parseFloat(midPoint.toFixed(4)), pdf: 0 });
+        dataPoints.push({ x: parseFloat((midPoint + padding).toFixed(4)), pdf: 0 });
+      }
+      setChartData(dataPoints);
+    } else {
+      setChartData(null);
+    }
+  }, [results]);
+
+  const chartConfig = {
+    pdf: {
+      label: "f(x)",
+      color: "hsl(var(--chart-2))", // Use a different chart color for variety
+    },
+  } satisfies ChartConfig;
 
 
   const calculateMetrics = (
@@ -144,30 +177,36 @@ export function ContinuousUniformCalculator() {
     let x1Swapped_res: number | undefined = undefined;
     let x2Swapped_res: number | undefined = undefined;
 
-    if (currentActiveTab === "tail_probabilities") {
-      if (data.x1Value !== undefined) {
-        prob_greater_than_x1_res = 1 - continuousUniformCDF(a, b, data.x1Value);
-      }
-      if (data.x2Value !== undefined) {
-        prob_less_than_x2_res = continuousUniformCDF(a, b, data.x2Value);
-      }
-      if (prob_greater_than_x1_res !== undefined || prob_less_than_x2_res !== undefined) {
-        prob_sum_gt_lt_res = (prob_greater_than_x1_res ?? 0) + (prob_less_than_x2_res ?? 0);
-      }
-    } else if (currentActiveTab === "range_probability") {
-      if (data.x1Value !== undefined && data.x2Value !== undefined) {
-        let x1_calc = data.x1Value;
-        let x2_calc = data.x2Value;
-        if (x1_calc > x2_calc) {
-            [x1_calc, x2_calc] = [x2_calc, x1_calc];
-            x1Swapped_res = data.x2Value; 
-            x2Swapped_res = data.x1Value;
+    // Only perform probability calculations if a < b
+    if (a < b) {
+        if (currentActiveTab === "tail_probabilities") {
+            if (data.x1Value !== undefined) {
+                prob_greater_than_x1_res = 1 - continuousUniformCDF(a, b, data.x1Value);
+            }
+            if (data.x2Value !== undefined) {
+                prob_less_than_x2_res = continuousUniformCDF(a, b, data.x2Value);
+            }
+            if (prob_greater_than_x1_res !== undefined || prob_less_than_x2_res !== undefined) {
+                prob_sum_gt_lt_res = (prob_greater_than_x1_res ?? 0) + (prob_less_than_x2_res ?? 0);
+            }
+        } else if (currentActiveTab === "range_probability") {
+            if (data.x1Value !== undefined && data.x2Value !== undefined) {
+                let x1_calc = data.x1Value;
+                let x2_calc = data.x2Value;
+                if (x1_calc > x2_calc) {
+                    [x1_calc, x2_calc] = [x2_calc, x1_calc];
+                    x1Swapped_res = data.x2Value; 
+                    x2Swapped_res = data.x1Value;
+                }
+                probability_x1_x2_range_res = continuousUniformProbabilityInRange(a, b, x1_calc, x2_calc);
+            }
         }
-        probability_x1_x2_range_res = continuousUniformProbabilityInRange(a, b, x1_calc, x2_calc);
-      }
     }
 
+
     return {
+      lowerBound: a, // Include for chart
+      upperBound: b, // Include for chart
       mean,
       variance,
       stdDev,
@@ -183,6 +222,7 @@ export function ContinuousUniformCalculator() {
   const onSubmit = (values: ContinuousUniformFormValues) => {
     setIsLoading(true);
     setResults(null);
+    setChartData(null);
     
     const currentValues = { ...values };
 
@@ -373,6 +413,9 @@ export function ContinuousUniformCalculator() {
            <Skeleton className="h-4 w-full" />
            <Skeleton className="h-4 w-full" />
            <Skeleton className="h-4 w-3/4" />
+           <Separator className="my-4"/>
+           <Skeleton className="h-6 w-2/5 mb-2" /> {/* For chart title */}
+           <Skeleton className="h-[350px] w-full" /> {/* For chart itself */}
         </div>
       )}
 
@@ -398,7 +441,7 @@ export function ContinuousUniformCalculator() {
                 <TableRow key={index} className="transition-colors hover:bg-muted/30">
                   <TableCell className="font-medium py-3">{item.label}</TableCell>
                   <TableCell className="text-right font-mono py-3">
-                    {typeof item.value === 'number' ? item.value.toFixed(5) : item.value}
+                    {typeof item.value === 'number' ? item.value.toFixed(5) : "N/A"}
                   </TableCell>
                 </TableRow>
               ))}
@@ -449,8 +492,7 @@ export function ContinuousUniformCalculator() {
             </TableBody>
           </Table>
           
-          {/* Alert for P(X > x1) + P(X < x2) */}
-          {activeTab === "tail_probabilities" && (results.prob_greater_than_x1 !== undefined || results.prob_less_than_x2 !== undefined) && (
+          {activeTab === "tail_probabilities" && (results.prob_greater_than_x1 !== undefined || results.prob_less_than_x2 !== undefined) && results.lowerBound < results.upperBound && (
              <>
              <Separator className="my-6" />
              <Alert className="mt-4" variant="default">
@@ -481,8 +523,7 @@ export function ContinuousUniformCalculator() {
              </>
           )}
            
-           {/* Alert for P(x1 <= X <= x2) */}
-           {activeTab === "range_probability" && results.probability_x1_x2_range !== undefined && form.getValues("x1Value") !== undefined && form.getValues("x2Value") !== undefined && (
+           {activeTab === "range_probability" && results.probability_x1_x2_range !== undefined && form.getValues("x1Value") !== undefined && form.getValues("x2Value") !== undefined && results.lowerBound < results.upperBound && (
             <>
             <Separator className="my-6" />
             <Alert className="mt-4" variant="default">
@@ -505,13 +546,77 @@ export function ContinuousUniformCalculator() {
             </>
            )}
 
+           {/* Graph Section */}
+            {chartData && results && (
+              <>
+                <Separator className="my-6" />
+                <div className="mt-6">
+                  <h3 className="text-lg font-semibold mb-4 text-primary flex items-center gap-2">
+                    <RectangleHorizontal className="h-5 w-5" /> {/* Changed icon */}
+                    Gráfica de la Densidad de Probabilidad (PDF)
+                  </h3>
+                   {results.lowerBound >= results.upperBound && (
+                     <Alert variant="default" className="mb-4">
+                        <Info className="h-4 w-4"/>
+                        <AlertTitle>Intervalo Inválido para PDF</AlertTitle>
+                        <AlertDescription>
+                            La gráfica de la PDF requiere que el límite inferior (a) sea menor que el límite superior (b).
+                            La función de densidad es 0 en todos los puntos.
+                        </AlertDescription>
+                     </Alert>
+                   )}
+                  <ChartContainer config={chartConfig} className="h-[350px] w-full aspect-video">
+                    <RechartsLineChart
+                      data={chartData}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                      accessibilityLayer 
+                    >
+                      <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.3} />
+                      <XAxis
+                        dataKey="x"
+                        type="number"
+                        domain={['dataMin', 'dataMax']}
+                        tickFormatter={(value) => value.toFixed(results.lowerBound < results.upperBound ? 2 : 1)}
+                        label={{ value: "x", position: "insideBottomRight", dy:10, fill: "hsl(var(--muted-foreground))" }}
+                        stroke="hsl(var(--border))"
+                        tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                      />
+                      <YAxis
+                        dataKey="pdf"
+                        type="number"
+                        domain={[0, 'auto']} // Y-axis from 0 to auto-scaled max PDF value
+                        tickFormatter={(value) => value.toFixed(4)}
+                        label={{ value: "f(x)", angle: -90, position: "insideLeft", dx: -5, fill: "hsl(var(--muted-foreground))" }}
+                        stroke="hsl(var(--border))"
+                        tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                      />
+                      <ChartTooltip
+                        cursor={{ strokeDasharray: '3 3', stroke: "hsl(var(--border))" }}
+                        content={<ChartTooltipContent indicator="line" labelClassName="font-semibold" nameKey="name" />}
+                      />
+                      <Line
+                        type="linear" // Use linear for sharp corners of uniform PDF
+                        dataKey="pdf"
+                        name="f(x)" 
+                        stroke="var(--color-pdf)"
+                        strokeWidth={2.5}
+                        dot={false} 
+                        activeDot={{ r: 6, fill: "var(--color-pdf)", stroke: "hsl(var(--background))", strokeWidth: 2 }}
+                      />
+                    </RechartsLineChart>
+                  </ChartContainer>
+                </div>
+              </>
+            )}
+
+
             <Alert className="mt-6 bg-secondary/30 border-primary/30">
               <Info className="h-4 w-4 text-primary" />
               <AlertTitle className="text-primary">Propiedades de la Distribución Uniforme Continua</AlertTitle>
               <AlertDescription className="text-foreground/80 space-y-1">
                 <p><strong>Intervalo:</strong> [a, b]</p>
                 <p><strong>Función de Densidad (f(x)):</strong> 1/(b-a) para x en [a,b], y 0 fuera.</p>
-                <p><strong>Área bajo la curva:</strong> El área total bajo la curva f(x) en [a, b] es 1.</p>
+                <p><strong>Área bajo la curva:</strong> El área total bajo la curva f(x) en [a, b] es 1 (si a &lt; b).</p>
                 <p><strong>Probabilidad y Área:</strong> P(c ≤ X ≤ d) = (d - c) / (b - a) para a ≤ c ≤ d ≤ b.</p>
               </AlertDescription>
            </Alert>
@@ -520,3 +625,4 @@ export function ContinuousUniformCalculator() {
     </Card>
   );
 }
+
