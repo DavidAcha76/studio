@@ -42,7 +42,7 @@ export default function Home() {
        </div>
        <footer className="text-center mt-16 pt-8 pb-4 text-sm text-muted-foreground relative">
          <Separator className="absolute top-0 left-1/2 -translate-x-1/2 w-1/4" />
-        Hecha por David Acha
+        Hecho por David Acha y Manuel Monegro
        </footer>
     </main>
   );
