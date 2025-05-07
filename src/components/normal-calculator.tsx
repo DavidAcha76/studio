@@ -173,7 +173,7 @@ export function NormalCalculator() {
   };
 
   return (
-    <Card className="shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:-translate-y-1 rounded-xl overflow-hidden">
+    <Card className="shadow-lg transition-all duration-300 ease-in-out transform hover:-translate-y-1 rounded-xl overflow-hidden">
       <CardHeader className="bg-gradient-to-br from-card to-secondary/30 p-6">
         <CardTitle className="text-2xl text-primary flex items-center gap-2">
           <TrendingUp className="h-6 w-6" />
@@ -444,4 +444,3 @@ export function NormalCalculator() {
     </Card>
   );
 }
-

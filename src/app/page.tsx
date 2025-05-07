@@ -19,22 +19,22 @@ export default function Home() {
         */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-12 lg:gap-14"> 
           <div>
-            <div className="p-1 bg-gradient-to-br from-primary/20 via-transparent to-transparent hover:from-primary/30 rounded-lg h-full transition-all duration-300 ease-in-out">
+            <div className="p-1 bg-gradient-to-br from-primary/20 via-transparent to-transparent rounded-lg h-full transition-all duration-300 ease-in-out">
                  <PoissonCalculator />
             </div>
           </div>
           <div>
-             <div className="p-1 bg-gradient-to-b from-primary/20 via-transparent to-transparent hover:from-primary/30 rounded-lg h-full transition-all duration-300 ease-in-out">
+             <div className="p-1 bg-gradient-to-b from-primary/20 via-transparent to-transparent rounded-lg h-full transition-all duration-300 ease-in-out">
                 <HypergeometricCalculator />
              </div>
           </div>
           <div> 
-             <div className="p-1 bg-gradient-to-bl from-primary/20 via-transparent to-transparent hover:from-primary/30 rounded-lg h-full transition-all duration-300 ease-in-out">
+             <div className="p-1 bg-gradient-to-bl from-primary/20 via-transparent to-transparent rounded-lg h-full transition-all duration-300 ease-in-out">
                 <ContinuousUniformCalculator />
              </div>
           </div>
            <div> 
-             <div className="p-1 bg-gradient-to-tr from-primary/20 via-transparent to-transparent hover:from-primary/30 rounded-lg h-full transition-all duration-300 ease-in-out">
+             <div className="p-1 bg-gradient-to-tr from-primary/20 via-transparent to-transparent rounded-lg h-full transition-all duration-300 ease-in-out">
                 <NormalCalculator />
              </div>
           </div>

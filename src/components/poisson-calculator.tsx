@@ -151,7 +151,7 @@ export function PoissonCalculator() {
 
   return (
      // Enhanced card styling with subtle hover effect and transition
-    <Card className="shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform hover:-translate-y-1 rounded-xl overflow-hidden">
+    <Card className="shadow-lg transition-all duration-300 ease-in-out transform hover:-translate-y-1 rounded-xl overflow-hidden">
        <CardHeader className="bg-gradient-to-br from-card to-secondary/30 p-6"> {/* Added gradient header */}
          <CardTitle className="text-2xl text-primary flex items-center gap-2"> {/* Adjusted color and added icon */}
             {/* Simple Line Chart Icon SVG */}
