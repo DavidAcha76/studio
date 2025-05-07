@@ -10,7 +10,7 @@ body {
 
 @layer base {
   :root {
-    /* Light Theme based on proposal */
+    /* Light Theme with new primary color #9d0045 */
     --background: 0 0% 94%; /* #f0f0f0 (light gray) */
     --background-end: 0 0% 90%; /* Slightly darker for gradient */
     --foreground: 0 0% 20%; /* #333333 (darker gray) */
@@ -18,37 +18,37 @@ body {
     --card-foreground: 0 0% 20%; /* #333333 */
     --popover: 0 0% 100%; /* white */
     --popover-foreground: 0 0% 20%; /* #333333 */
-    --primary: 207 70% 53%; /* #3498db (blue) */
+    --primary: 331 100% 30%; /* #9d0045 */
     --primary-foreground: 0 0% 100%; /* white */
     --secondary: 0 0% 85%; /* Lighter gray #d9d9d9 */
     --secondary-foreground: 0 0% 20%; /* #333333 */
     --muted: 0 0% 90%; /* #e6e6e6 */
     --muted-foreground: 0 0% 40%; /* #666666 */
-    --accent: 207 70% 53%; /* #3498db (blue) */
+    --accent: 331 100% 30%; /* #9d0045 */
     --accent-foreground: 0 0% 100%; /* white */
     --destructive: 0 75% 55%; /* #e05353 */
     --destructive-foreground: 0 0% 100%; /* white */
     --border: 0 0% 80%; /* #cccccc */
     --input: 0 0% 88%; /* #e0e0e0 */
-    --ring: 207 70% 53%; /* #3498db */
-    --chart-1: 207 70% 53%; /* blue */
-    --chart-2: 120 60% 45%; /* green */
-    --chart-3: 40 80% 55%;  /* orange */
-    --chart-4: 280 65% 60%; /* purple */
-    --chart-5: 0 70% 60%;   /* red */
+    --ring: 331 100% 30%; /* #9d0045 */
+    --chart-1: 331 100% 30%; /* Deep Pink */
+    --chart-2: 207 70% 53%; /* Blue */
+    --chart-3: 30 90% 55%;  /* Orange */
+    --chart-4: 260 60% 60%; /* Purple */
+    --chart-5: 130 50% 50%;   /* Green */
     --radius: 0.75rem;
-    --sidebar-background: 0 0% 92%; /* Slightly darker than main bg */
+    --sidebar-background: 0 0% 92%;
     --sidebar-foreground: 0 0% 20%;
-    --sidebar-primary: 207 70% 53%;
+    --sidebar-primary: 331 100% 30%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 0 0% 85%;
     --sidebar-accent-foreground: 0 0% 20%;
     --sidebar-border: 0 0% 75%;
-    --sidebar-ring: 207 70% 53%;
+    --sidebar-ring: 331 100% 30%;
   }
 
   .dark {
-    /* Dark Theme based on proposal */
+    /* Dark Theme with new primary color (lighter shade of #9d0045) */
     --background: 0 0% 12%; /* #1f1f1f (very dark gray) */
     --background-end: 0 0% 10%; /* Slightly darker for gradient */
     --foreground: 0 0% 85%; /* #d9d9d9 (light gray) */
@@ -56,32 +56,32 @@ body {
     --card-foreground: 0 0% 85%; /* #d9d9d9 */
     --popover: 0 0% 15%; /* #262626 */
     --popover-foreground: 0 0% 85%; /* #d9d9d9 */
-    --primary: 207 70% 63%; /* #5dade2 (lighter blue) */
-    --primary-foreground: 0 0% 10%; /* #1a1a1a (dark for contrast on blue) */
+    --primary: 331 90% 65%; /* Lighter Pink #EB7AB7 */
+    --primary-foreground: 0 0% 10%; /* #1a1a1a (dark for contrast) */
     --secondary: 0 0% 25%; /* #404040 */
     --secondary-foreground: 0 0% 80%; /* #cccccc */
     --muted: 0 0% 22%; /* #383838 */
     --muted-foreground: 0 0% 60%; /* #999999 */
-    --accent: 207 70% 63%; /* #5dade2 (lighter blue) */
-    --accent-foreground: 0 0% 10%; /* #1a1a1a (dark for contrast on blue) */
+    --accent: 331 90% 65%; /* Lighter Pink #EB7AB7 */
+    --accent-foreground: 0 0% 10%; /* #1a1a1a (dark for contrast) */
     --destructive: 0 65% 60%; /* #ec7878 */
     --destructive-foreground: 0 0% 100%; /* white */
     --border: 0 0% 30%; /* #4d4d4d */
     --input: 0 0% 28%; /* #474747 */
-    --ring: 207 70% 63%; /* #5dade2 */
-    --chart-1: 207 70% 63%; /* lighter blue */
-    --chart-2: 120 50% 55%; /* lighter green */
-    --chart-3: 40 70% 65%;  /* lighter orange */
-    --chart-4: 280 55% 70%; /* lighter purple */
-    --chart-5: 0 60% 70%;   /* lighter red */
+    --ring: 331 90% 65%; /* Lighter Pink #EB7AB7 */
+    --chart-1: 331 90% 65%; /* Lighter Pink */
+    --chart-2: 207 80% 65%; /* Lighter Blue */
+    --chart-3: 30 100% 65%;  /* Lighter Orange */
+    --chart-4: 260 70% 70%; /* Lighter Purple */
+    --chart-5: 130 60% 60%;   /* Lighter Green */
     --sidebar-background: 0 0% 10%;
     --sidebar-foreground: 0 0% 85%;
-    --sidebar-primary: 207 70% 63%;
+    --sidebar-primary: 331 90% 65%;
     --sidebar-primary-foreground: 0 0% 10%;
     --sidebar-accent: 0 0% 25%;
     --sidebar-accent-foreground: 0 0% 85%;
     --sidebar-border: 0 0% 28%;
-    --sidebar-ring: 207 70% 63%;
+    --sidebar-ring: 331 90% 65%;
   }
 }
 
