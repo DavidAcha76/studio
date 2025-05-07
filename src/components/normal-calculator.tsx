@@ -173,7 +173,7 @@ export function NormalCalculator() {
   };
 
   return (
-    <Card className="shadow-lg transition-all duration-300 ease-in-out transform hover:-translate-y-1 rounded-xl overflow-hidden">
+    <Card className="shadow-lg rounded-xl overflow-hidden">
       <CardHeader className="bg-gradient-to-br from-card to-secondary/30 p-6">
         <CardTitle className="text-2xl text-primary flex items-center gap-2">
           <TrendingUp className="h-6 w-6" />
@@ -205,7 +205,7 @@ export function NormalCalculator() {
                         </Tooltip>
                       </div>
                       <FormControl>
-                        <Input type="number" step="any" placeholder="ej., 0" {...field} className="focus:ring-primary focus:border-primary transition-shadow" />
+                        <Input type="number" step="any" placeholder="ej., 0" {...field} className="focus:ring-primary focus:border-primary" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -228,7 +228,7 @@ export function NormalCalculator() {
                         </Tooltip>
                       </div>
                       <FormControl>
-                        <Input type="number" step="any" placeholder="ej., 1" {...field} className="focus:ring-primary focus:border-primary transition-shadow" />
+                        <Input type="number" step="any" placeholder="ej., 1" {...field} className="focus:ring-primary focus:border-primary" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -252,7 +252,7 @@ export function NormalCalculator() {
                                 <FormLabel>Valor de x</FormLabel>
                                 <Tooltip><TooltipTrigger asChild><HelpCircle className="h-4 w-4"/></TooltipTrigger><TooltipContent side="top" className="max-w-xs">El valor de x para calcular P(X&lt;x), P(X&gt;x) y f(x).</TooltipContent></Tooltip>
                             </div>
-                            <FormControl><Input type="number" step="any" placeholder="ej., 1.96" {...field} className="focus:ring-primary focus:border-primary transition-shadow"/></FormControl>
+                            <FormControl><Input type="number" step="any" placeholder="ej., 1.96" {...field} className="focus:ring-primary focus:border-primary"/></FormControl>
                             <FormMessage />
                             </FormItem>
                         )}
@@ -267,7 +267,7 @@ export function NormalCalculator() {
                         render={({ field }) => (
                             <FormItem>
                             <div className="flex items-center justify-between"> <FormLabel>Valor de x₁</FormLabel> <Tooltip><TooltipTrigger asChild><HelpCircle className="h-4 w-4"/></TooltipTrigger><TooltipContent side="top" className="max-w-xs">Límite inferior del intervalo [x₁, x₂].</TooltipContent></Tooltip></div>
-                            <FormControl><Input type="number" step="any" placeholder="ej., -1" {...field} className="focus:ring-primary focus:border-primary transition-shadow"/></FormControl>
+                            <FormControl><Input type="number" step="any" placeholder="ej., -1" {...field} className="focus:ring-primary focus:border-primary"/></FormControl>
                             <FormMessage />
                             </FormItem>
                         )}
@@ -278,7 +278,7 @@ export function NormalCalculator() {
                         render={({ field }) => (
                             <FormItem>
                             <div className="flex items-center justify-between"> <FormLabel>Valor de x₂</FormLabel> <Tooltip><TooltipTrigger asChild><HelpCircle className="h-4 w-4"/></TooltipTrigger><TooltipContent side="top" className="max-w-xs">Límite superior del intervalo [x₁, x₂].</TooltipContent></Tooltip></div>
-                            <FormControl><Input type="number" step="any" placeholder="ej., 1" {...field} className="focus:ring-primary focus:border-primary transition-shadow"/></FormControl>
+                            <FormControl><Input type="number" step="any" placeholder="ej., 1" {...field} className="focus:ring-primary focus:border-primary"/></FormControl>
                             <FormMessage />
                             </FormItem>
                         )}

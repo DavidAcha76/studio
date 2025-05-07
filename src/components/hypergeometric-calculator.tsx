@@ -188,10 +188,9 @@ export function HypergeometricCalculator() {
 
 
   return (
-    // Enhanced card styling with subtle hover effect and transition
-    <Card className="shadow-lg transition-all duration-300 ease-in-out transform hover:-translate-y-1 rounded-xl overflow-hidden">
-      <CardHeader className="bg-gradient-to-br from-card to-secondary/30 p-6"> {/* Added gradient header */}
-        <CardTitle className="text-2xl text-primary flex items-center gap-2"> {/* Adjusted color and added icon */}
+    <Card className="shadow-lg rounded-xl overflow-hidden">
+      <CardHeader className="bg-gradient-to-br from-card to-secondary/30 p-6"> 
+        <CardTitle className="text-2xl text-primary flex items-center gap-2"> 
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-boxes"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" x2="12" y1="22" y2="12"/></svg>
           Calculadora Hipergeométrica
         </CardTitle>
@@ -199,7 +198,7 @@ export function HypergeometricCalculator() {
       </CardHeader>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
-          <CardContent className="p-6 space-y-6"> {/* Increased padding and spacing */}
+          <CardContent className="p-6 space-y-6"> 
              <TooltipProvider delayDuration={200}>
             <FormField
               control={form.control}
@@ -218,8 +217,7 @@ export function HypergeometricCalculator() {
                     </Tooltip>
                    </div>
                   <FormControl>
-                    {/* Enhanced Input styling */}
-                    <Input type="number" step="1" placeholder="ej., 50" {...field} className="focus:ring-primary focus:border-primary transition-shadow" />
+                    <Input type="number" step="1" placeholder="ej., 50" {...field} className="focus:ring-primary focus:border-primary" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -242,7 +240,7 @@ export function HypergeometricCalculator() {
                     </Tooltip>
                    </div>
                   <FormControl>
-                    <Input type="number" step="1" placeholder="ej., 10" {...field} className="focus:ring-primary focus:border-primary transition-shadow" />
+                    <Input type="number" step="1" placeholder="ej., 10" {...field} className="focus:ring-primary focus:border-primary" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -265,7 +263,7 @@ export function HypergeometricCalculator() {
                     </Tooltip>
                    </div>
                   <FormControl>
-                    <Input type="number" step="1" placeholder="ej., 20" {...field} className="focus:ring-primary focus:border-primary transition-shadow" />
+                    <Input type="number" step="1" placeholder="ej., 20" {...field} className="focus:ring-primary focus:border-primary" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -288,7 +286,7 @@ export function HypergeometricCalculator() {
                     </Tooltip>
                    </div>
                   <FormControl>
-                    <Input type="number" step="1" placeholder="ej., 5" {...field} className="focus:ring-primary focus:border-primary transition-shadow" />
+                    <Input type="number" step="1" placeholder="ej., 5" {...field} className="focus:ring-primary focus:border-primary" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -296,8 +294,8 @@ export function HypergeometricCalculator() {
             />
              </TooltipProvider>
           </CardContent>
-          <CardFooter className="flex justify-end p-6 bg-muted/50 border-t"> {/* Added background and border */}
-            <Button type="submit" disabled={isLoading} size="lg" className="transition-all duration-300 ease-in-out hover:scale-105 active:scale-95"> {/* Enhanced button */}
+          <CardFooter className="flex justify-end p-6 bg-muted/50 border-t"> 
+            <Button type="submit" disabled={isLoading} size="lg" className="transition-all duration-300 ease-in-out hover:scale-105 active:scale-95"> 
               {isLoading ? (
                  <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -330,13 +328,12 @@ export function HypergeometricCalculator() {
        )}
 
 
-      {/* Enhanced results display */}
       {results && !isLoading && (
-        <div className="mt-6 p-6 border-t animate-in fade-in-50 duration-500"> {/* Added animation */}
-          <h3 className="text-xl font-semibold mb-4 text-primary">Resultados del Cálculo</h3> {/* Enhanced title */}
+        <div className="mt-6 p-6 border-t animate-in fade-in-50 duration-500"> 
+          <h3 className="text-xl font-semibold mb-4 text-primary">Resultados del Cálculo</h3> 
           <Table>
             <TableHeader>
-              <TableRow className="hover:bg-transparent"> {/* Removed hover for header */}
+              <TableRow className="hover:bg-transparent"> 
                 <TableHead className="w-[200px] text-muted-foreground">Métrica</TableHead>
                 <TableHead className="text-right text-muted-foreground">Valor</TableHead>
               </TableRow>
@@ -345,7 +342,7 @@ export function HypergeometricCalculator() {
               {[
                 { label: "Media (E[X])", value: results.mean },
                 { label: "Varianza (Var(X))", value: results.variance },
-                { label: "Desviación Estándar (σ)", value: results.stdDev }, // Changed SD label
+                { label: "Desviación Estándar (σ)", value: results.stdDev }, 
                 { label: "P(X = k)", value: results.p_eq_k },
                 { label: "P(X < k)", value: results.p_lt_k },
                 { label: "P(X ≤ k)", value: results.p_lte_k },
@@ -354,7 +351,7 @@ export function HypergeometricCalculator() {
               ].map((item, index) => (
                  <TableRow key={index} className="transition-colors hover:bg-muted/30">
                   <TableCell className="font-medium py-3">{item.label}</TableCell>
-                  <TableCell className="text-right font-mono py-3">{item.value.toFixed(5)}</TableCell> {/* Used mono font */}
+                  <TableCell className="text-right font-mono py-3">{item.value.toFixed(5)}</TableCell> 
                 </TableRow>
               ))}
             </TableBody>

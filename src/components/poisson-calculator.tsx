@@ -150,10 +150,9 @@ export function PoissonCalculator() {
   };
 
   return (
-     // Enhanced card styling with subtle hover effect and transition
-    <Card className="shadow-lg transition-all duration-300 ease-in-out transform hover:-translate-y-1 rounded-xl overflow-hidden">
-       <CardHeader className="bg-gradient-to-br from-card to-secondary/30 p-6"> {/* Added gradient header */}
-         <CardTitle className="text-2xl text-primary flex items-center gap-2"> {/* Adjusted color and added icon */}
+    <Card className="shadow-lg rounded-xl overflow-hidden">
+       <CardHeader className="bg-gradient-to-br from-card to-secondary/30 p-6"> 
+         <CardTitle className="text-2xl text-primary flex items-center gap-2"> 
             {/* Simple Line Chart Icon SVG */}
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-line-chart">
                 <path d="M3 3v18h18"/>
@@ -165,27 +164,26 @@ export function PoissonCalculator() {
       </CardHeader>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
-          <CardContent className="p-6 space-y-6"> {/* Increased padding and spacing */}
-            <TooltipProvider delayDuration={200}> {/* Adjusted delay */}
+          <CardContent className="p-6 space-y-6"> 
+            <TooltipProvider delayDuration={200}> 
             <FormField
               control={form.control}
               name="lambda"
               render={({ field }) => (
                 <FormItem>
-                   <div className="flex items-center justify-between"> {/* Align label and icon */}
+                   <div className="flex items-center justify-between"> 
                     <FormLabel>Tasa Promedio (λ)</FormLabel>
                      <Tooltip>
                       <TooltipTrigger asChild>
                          <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help hover:text-foreground transition-colors" />
                       </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-xs"> {/* Added side and max-width */}
+                      <TooltipContent side="top" className="max-w-xs"> 
                         <p>El número promedio de eventos que ocurren en un intervalo fijo de tiempo o espacio.</p>
                       </TooltipContent>
                     </Tooltip>
                   </div>
                   <FormControl>
-                     {/* Enhanced Input styling */}
-                    <Input type="number" step="any" placeholder="ej., 5.2" {...field} className="focus:ring-primary focus:border-primary transition-shadow" />
+                    <Input type="number" step="any" placeholder="ej., 5.2" {...field} className="focus:ring-primary focus:border-primary" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -196,19 +194,19 @@ export function PoissonCalculator() {
               name="x"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex items-center justify-between"> {/* Align label and icon */}
+                  <div className="flex items-center justify-between"> 
                     <FormLabel>Número de Eventos (x)</FormLabel>
                     <Tooltip>
                       <TooltipTrigger asChild>
                          <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help hover:text-foreground transition-colors" />
                       </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-xs"> {/* Added side and max-width */}
+                      <TooltipContent side="top" className="max-w-xs"> 
                         <p>El número específico de eventos para el cual calcular la probabilidad (debe ser un entero no negativo).</p>
                       </TooltipContent>
                     </Tooltip>
                   </div>
                   <FormControl>
-                    <Input type="number" step="1" placeholder="ej., 3" {...field} className="focus:ring-primary focus:border-primary transition-shadow" />
+                    <Input type="number" step="1" placeholder="ej., 3" {...field} className="focus:ring-primary focus:border-primary" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -216,8 +214,8 @@ export function PoissonCalculator() {
             />
             </TooltipProvider>
           </CardContent>
-           <CardFooter className="flex justify-end p-6 bg-muted/50 border-t"> {/* Added background and border */}
-            <Button type="submit" disabled={isLoading} size="lg" className="transition-all duration-300 ease-in-out hover:scale-105 active:scale-95"> {/* Enhanced button */}
+           <CardFooter className="flex justify-end p-6 bg-muted/50 border-t"> 
+            <Button type="submit" disabled={isLoading} size="lg" className="transition-all duration-300 ease-in-out hover:scale-105 active:scale-95"> 
               {isLoading ? (
                  <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -249,13 +247,12 @@ export function PoissonCalculator() {
         </div>
        )}
 
-       {/* Enhanced results display */}
       {results && !isLoading && (
-        <div className="mt-6 p-6 border-t animate-in fade-in-50 duration-500"> {/* Added animation */}
-          <h3 className="text-xl font-semibold mb-4 text-primary">Resultados del Cálculo</h3> {/* Enhanced title */}
+        <div className="mt-6 p-6 border-t animate-in fade-in-50 duration-500"> 
+          <h3 className="text-xl font-semibold mb-4 text-primary">Resultados del Cálculo</h3> 
           <Table>
             <TableHeader>
-              <TableRow className="hover:bg-transparent"> {/* Removed hover for header */}
+              <TableRow className="hover:bg-transparent"> 
                 <TableHead className="w-[200px] text-muted-foreground">Métrica</TableHead>
                 <TableHead className="text-right text-muted-foreground">Valor</TableHead>
               </TableRow>
@@ -271,9 +268,9 @@ export function PoissonCalculator() {
                 { label: "P(X > x)", value: results.p_gt_x },
                 { label: "P(X ≥ x)", value: results.p_gte_x },
                ].map((item, index) => (
-                <TableRow key={index} className="transition-colors hover:bg-muted/30"> {/* Subtle row hover */}
-                  <TableCell className="font-medium py-3">{item.label}</TableCell> {/* Adjusted padding */}
-                  <TableCell className="text-right font-mono py-3">{item.value.toFixed(5)}</TableCell> {/* Used mono font, adjusted padding */}
+                <TableRow key={index} className="transition-colors hover:bg-muted/30"> 
+                  <TableCell className="font-medium py-3">{item.label}</TableCell> 
+                  <TableCell className="text-right font-mono py-3">{item.value.toFixed(5)}</TableCell> 
                 </TableRow>
                ))}
             </TableBody>

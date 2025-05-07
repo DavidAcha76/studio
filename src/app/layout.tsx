@@ -10,8 +10,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'StatCalc', // Mantener nombre de la app
-  description: 'Calculadoras de Distribución Poisson e Hipergeométrica', // Updated description to Spanish
+  title: 'Estadisticas del Valle', // Updated title
+  description: 'Calculadoras de Distribución Poisson, Hipergeométrica, Uniforme Continua y Normal', // Updated description to include all calculators
 };
 
 export default function RootLayout({
@@ -29,3 +29,4 @@ export default function RootLayout({
     </html>
   );
 }
+

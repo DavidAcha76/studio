@@ -12,7 +12,7 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:border-transparent", // Enhanced focus state
           "disabled:cursor-not-allowed disabled:opacity-50",
           "transition-all duration-200 ease-in-out", // Added transition
-          "shadow-sm hover:shadow-md focus-visible:shadow-lg", // Subtle shadow effects
+          // Removed shadow effects "shadow-sm hover:shadow-md focus-visible:shadow-lg", 
           "md:text-sm",
           className
         )}
