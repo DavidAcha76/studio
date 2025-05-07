@@ -98,14 +98,21 @@ body {
 /* Additional styles for enhanced UX */
 @layer components {
   .animated-gradient-text {
-    @apply bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent;
-    background-size: 200% auto;
-    animation: gradient-flow 3s linear infinite;
+    /* Updated to use primary and primary-foreground for a more dynamic effect */
+    @apply bg-gradient-to-r from-primary via-primary-foreground to-primary bg-clip-text text-transparent;
+    background-size: 300% auto; /* Increased size for smoother animation */
+    animation: gradient-flow 5s ease-in-out infinite; /* Slower and smoother animation */
   }
 }
 
 @keyframes gradient-flow {
-  to {
-    background-position: 200% center;
+  0% {
+    background-position: 0% center;
+  }
+  50% {
+    background-position: 300% center;
+  }
+  100% {
+    background-position: 0% center;
   }
 }

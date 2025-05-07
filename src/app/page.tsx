@@ -9,7 +9,7 @@ export default function Home() {
   return (
     <main className="container mx-auto p-4 md:p-10 lg:p-16 flex flex-col min-h-screen">
        <div className="flex-grow">
-        <h1 className="text-4xl md:text-5xl font-bold text-center mb-16 animated-gradient-text"> 
+        <h1 className="text-4xl md:text-5xl font-bold text-center mb-12 md:mb-16 lg:mb-20 animated-gradient-text"> 
           StatCalc: Calculadoras de Distribución
         </h1>
         {/* Updated grid to accommodate four calculators. 
@@ -17,7 +17,7 @@ export default function Home() {
             On medium screens, it will also be 2 columns.
             On small screens, it will be 1 column.
         */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-16"> 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-12 lg:gap-14"> 
           <div>
             <div className="p-1 bg-gradient-to-br from-primary/20 via-transparent to-transparent hover:from-primary/30 rounded-lg h-full transition-all duration-300 ease-in-out">
                  <PoissonCalculator />
