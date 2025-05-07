@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -492,36 +491,6 @@ export function ContinuousUniformCalculator() {
             </TableBody>
           </Table>
           
-          {activeTab === "tail_probabilities" && (results.prob_greater_than_x1 !== undefined || results.prob_less_than_x2 !== undefined) && results.lowerBound < results.upperBound && (
-             <>
-             <Separator className="my-6" />
-             <Alert className="mt-4" variant="default">
-                 <Percent className="h-4 w-4" />
-                 <AlertTitle>Probabilidades de Cola P(X &gt; x₁) + P(X &lt; x₂)</AlertTitle>
-                 <AlertDescription>
-                     <ul className="list-disc list-inside space-y-1">
-                        {results.prob_greater_than_x1 !== undefined && form.getValues("x1Value") !== undefined && (
-                            <li>
-                                P(X &gt; {form.getValues("x1Value")}) = <span className="font-mono ml-1">{results.prob_greater_than_x1.toFixed(5)}</span> (<span className="font-mono">{(results.prob_greater_than_x1 * 100).toFixed(2)}%</span>)
-                                <p className="text-xs mt-1 text-muted-foreground">Fórmula: 1 - CDF(x₁)</p>
-                            </li>
-                        )}
-                        {results.prob_less_than_x2 !== undefined && form.getValues("x2Value") !== undefined && (
-                           <li>
-                                P(X &lt; {form.getValues("x2Value")}) = <span className="font-mono ml-1">{results.prob_less_than_x2.toFixed(5)}</span> (<span className="font-mono">{(results.prob_less_than_x2 * 100).toFixed(2)}%</span>)
-                                 <p className="text-xs mt-1 text-muted-foreground">Fórmula: CDF(x₂)</p>
-                            </li>
-                        )}
-                         {results.prob_sum_gt_lt !== undefined && (
-                            <li className="font-bold mt-2">
-                                Suma Total = <span className="font-mono ml-1">{results.prob_sum_gt_lt.toFixed(5)}</span> (<span className="font-mono">{(results.prob_sum_gt_lt * 100).toFixed(2)}%</span>)
-                             </li>
-                         )}
-                     </ul>
-                 </AlertDescription>
-             </Alert>
-             </>
-          )}
            
            {activeTab === "range_probability" && results.probability_x1_x2_range !== undefined && form.getValues("x1Value") !== undefined && form.getValues("x2Value") !== undefined && results.lowerBound < results.upperBound && (
             <>
@@ -608,18 +577,6 @@ export function ContinuousUniformCalculator() {
                 </div>
               </>
             )}
-
-
-            <Alert className="mt-6 bg-secondary/30 border-primary/30">
-              <Info className="h-4 w-4 text-primary" />
-              <AlertTitle className="text-primary">Propiedades de la Distribución Uniforme Continua</AlertTitle>
-              <AlertDescription className="text-foreground/80 space-y-1">
-                <p><strong>Intervalo:</strong> [a, b]</p>
-                <p><strong>Función de Densidad (f(x)):</strong> 1/(b-a) para x en [a,b], y 0 fuera.</p>
-                <p><strong>Área bajo la curva:</strong> El área total bajo la curva f(x) en [a, b] es 1 (si a &lt; b).</p>
-                <p><strong>Probabilidad y Área:</strong> P(c ≤ X ≤ d) = (d - c) / (b - a) para a ≤ c ≤ d ≤ b.</p>
-              </AlertDescription>
-           </Alert>
         </div>
       )}
     </Card>
