@@ -5,7 +5,7 @@ import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Calculator, HelpCircle, Loader2, Sigma, BarChartBig, Percent, TrendingUp } from "lucide-react";
+import { Calculator, HelpCircle, Loader2, Sigma, BarChartBig, Percent, TrendingUp, AreaChart, InfoIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -54,6 +54,14 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
+import { CartesianGrid, Line, LineChart as RechartsLineChart, XAxis, YAxis } from "recharts";
+
 
 const formSchema = z.object({
   mean: z.coerce.number().finite("Media (μ) debe ser un número finito"),
@@ -89,6 +97,7 @@ export function NormalCalculator() {
   const [results, setResults] = React.useState<NormalResults | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState("single_x"); // "single_x" or "range_x1_x2"
+  const [chartData, setChartData] = React.useState<Array<{ x: number; pdf: number }> | null>(null);
 
   const form = useForm<NormalFormValues>({
     resolver: zodResolver(formSchema),
@@ -101,9 +110,37 @@ export function NormalCalculator() {
     },
   });
 
+  React.useEffect(() => {
+    if (results && results.mean !== undefined && results.stdDev !== undefined && results.stdDev > 0) {
+      const { mean, stdDev } = results;
+      const dataPoints = [];
+      const lowerBound = mean - 4 * stdDev;
+      const upperBound = mean + 4 * stdDev;
+      const numPoints = 100; 
+
+      for (let i = 0; i <= numPoints; i++) {
+        const x = lowerBound + (upperBound - lowerBound) * (i / numPoints);
+        const pdf = normalPDF(x, mean, stdDev);
+        dataPoints.push({ x: parseFloat(x.toFixed(4)), pdf: parseFloat(pdf.toFixed(5)) });
+      }
+      setChartData(dataPoints);
+    } else {
+      setChartData(null);
+    }
+  }, [results]);
+
+  const chartConfig = {
+    pdf: {
+      label: "f(x)",
+      color: "hsl(var(--primary))",
+    },
+  } satisfies ChartConfig;
+
+
   const onSubmit = (values: NormalFormValues) => {
     setIsLoading(true);
     setResults(null);
+    setChartData(null);
 
     setTimeout(() => {
       try {
@@ -412,6 +449,74 @@ export function NormalCalculator() {
                 </p>
               </AlertDescription>
            </Alert>
+
+           {/* Graph Section */}
+            {chartData && results?.mean !== undefined && results?.stdDev !== undefined && results.stdDev > 0 && (
+              <>
+                <Separator className="my-6" />
+                <div className="mt-6">
+                  <h3 className="text-lg font-semibold mb-4 text-primary flex items-center gap-2">
+                    <AreaChart className="h-5 w-5" />
+                    Gráfica de la Densidad de Probabilidad (PDF)
+                  </h3>
+                  <ChartContainer config={chartConfig} className="h-[350px] w-full aspect-video">
+                    <RechartsLineChart
+                      data={chartData}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                      accessibilityLayer // For better accessibility
+                    >
+                      <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.3} />
+                      <XAxis
+                        dataKey="x"
+                        type="number"
+                        domain={['dataMin', 'dataMax']}
+                        tickFormatter={(value) => value.toFixed(2)}
+                        label={{ value: "x", position: "insideBottomRight", dy:10, fill: "hsl(var(--muted-foreground))" }}
+                        stroke="hsl(var(--border))"
+                        tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                      />
+                      <YAxis
+                        dataKey="pdf"
+                        type="number"
+                        domain={[0, 'auto']}
+                        tickFormatter={(value) => value.toFixed(4)}
+                        label={{ value: "f(x)", angle: -90, position: "insideLeft", dx: -5, fill: "hsl(var(--muted-foreground))" }}
+                        stroke="hsl(var(--border))"
+                        tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                      />
+                      <ChartTooltip
+                        cursor={{ strokeDasharray: '3 3', stroke: "hsl(var(--border))" }}
+                        content={<ChartTooltipContent 
+                                    indicator="line" 
+                                    labelClassName="font-semibold"
+                                    nameKey="name" 
+                                 />}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="pdf"
+                        name="f(x)" // Name for tooltip
+                        stroke="var(--color-pdf)"
+                        strokeWidth={2.5}
+                        dot={false}
+                        activeDot={{ r: 6, fill: "var(--color-pdf)", stroke: "hsl(var(--background))", strokeWidth: 2 }}
+                      />
+                    </RechartsLineChart>
+                  </ChartContainer>
+                  <Alert className="mt-4" variant="default">
+                      <InfoIcon className="h-4 w-4 text-primary"/>
+                      <AlertTitle className="text-primary">Interpretación de la Gráfica</AlertTitle>
+                      <AlertDescription className="space-y-1 text-foreground/90">
+                          <p>Esta gráfica muestra la Función de Densidad de Probabilidad (PDF) para la distribución normal con media (μ) = <strong>{results.mean.toFixed(3)}</strong> y desviación estándar (σ) = <strong>{results.stdDev.toFixed(3)}</strong>.</p>
+                          <p>El área total bajo la curva es 1. La altura de la curva en un punto x (f(x)) indica la densidad de probabilidad en ese punto; no es la probabilidad de que X sea exactamente x (que es 0 para distribuciones continuas).</p>
+                          <p>La probabilidad de que X caiga en un intervalo [a, b] es el área bajo la curva entre a y b.</p>
+                      </AlertDescription>
+                  </Alert>
+                </div>
+              </>
+            )}
+
+
         </div>
       )}
     </Card>
