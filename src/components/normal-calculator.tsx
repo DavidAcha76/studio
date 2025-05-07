@@ -5,7 +5,7 @@ import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Calculator, HelpCircle, Loader2, Sigma, BarChartBig, Percent, TrendingUp, AreaChart, InfoIcon } from "lucide-react";
+import { Calculator, HelpCircle, Loader2, Sigma, BarChartBig, Percent, TrendingUp, AreaChart } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -44,10 +44,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
 import {
   Tabs,
   TabsContent,
@@ -385,71 +383,6 @@ export function NormalCalculator() {
             </TableBody>
           </Table>
           
-          {activeTab === "single_x" && form.getValues("xValue") !== undefined && results.prob_less_than_x !== undefined && (
-            <>
-             <Separator className="my-6" />
-             <Alert className="mt-4" variant="default">
-                 <Percent className="h-4 w-4" />
-                 <AlertTitle>Detalle de Probabilidades para x = {form.getValues("xValue")}</AlertTitle>
-                 <AlertDescription>
-                     <ul className="list-disc list-inside space-y-1">
-                        {results.prob_less_than_x !== undefined && (
-                            <li>
-                                P(X &lt; {form.getValues("xValue")}): <span className="font-mono ml-1">{results.prob_less_than_x.toFixed(5)}</span> (<span className="font-mono">{(results.prob_less_than_x * 100).toFixed(2)}%</span>)
-                                <p className="text-xs mt-1 text-muted-foreground">Probabilidad acumulada hasta x.</p>
-                            </li>
-                        )}
-                        {results.prob_greater_than_x !== undefined && (
-                           <li>
-                                P(X &gt; {form.getValues("xValue")}): <span className="font-mono ml-1">{results.prob_greater_than_x.toFixed(5)}</span> (<span className="font-mono">{(results.prob_greater_than_x * 100).toFixed(2)}%</span>)
-                                 <p className="text-xs mt-1 text-muted-foreground">Probabilidad de que X sea mayor que x (1 - P(X &lt; x)).</p>
-                            </li>
-                        )}
-                         {results.pdfX !== undefined && (
-                            <li className="mt-2">
-                                f(x = {form.getValues("xValue")}): <span className="font-mono ml-1">{results.pdfX.toFixed(5)}</span>
-                                <p className="text-xs mt-1 text-muted-foreground">Valor de la función de densidad de probabilidad en x.</p>
-                             </li>
-                         )}
-                     </ul>
-                 </AlertDescription>
-             </Alert>
-             </>
-          )}
-           
-           {activeTab === "range_x1_x2" && results.prob_between_x1_x2 !== undefined && form.getValues("x1Value") !== undefined && form.getValues("x2Value") !== undefined && (
-            <>
-            <Separator className="my-6" />
-            <Alert className="mt-4" variant="default">
-                <Percent className="h-4 w-4" />
-                <AlertTitle>Probabilidad en Intervalo P({form.getValues("x1Value")} &lt; X &lt; {form.getValues("x2Value")})</AlertTitle>
-                <AlertDescription>
-                    La probabilidad de que X esté entre <strong> {form.getValues("x1Value")} </strong> y <strong> {form.getValues("x2Value")} </strong> es:
-                    <div className="font-mono text-lg my-2">{results.prob_between_x1_x2.toFixed(5)}</div>
-                    Esto equivale a un <strong>{(results.prob_between_x1_x2 * 100).toFixed(2)}%</strong>.
-                     <p className="text-xs mt-1 text-muted-foreground">
-                        Fórmula: CDF(x₂) - CDF(x₁)
-                     </p>
-                </AlertDescription>
-            </Alert>
-            </>
-           )}
-
-            <Alert className="mt-6 bg-secondary/30 border-primary/30">
-              <Sigma className="h-4 w-4 text-primary" />
-              <AlertTitle className="text-primary">Propiedades de la Distribución Normal</AlertTitle>
-              <AlertDescription className="text-foreground/80 space-y-1">
-                <p><strong>Forma:</strong> Curva de campana, simétrica alrededor de la media (μ).</p>
-                <p><strong>Parámetros:</strong> Definida por la media (μ) y la desviación estándar (σ).</p>
-                <p><strong>Área bajo la curva:</strong> El área total bajo la curva de densidad es 1 (o 100%).</p>
-                <p><strong>Regla Empírica (aproximada):</strong>
-                    ~68% de los datos caen dentro de ±1σ de μ.
-                    ~95% de los datos caen dentro de ±2σ de μ.
-                    ~99.7% de los datos caen dentro de ±3σ de μ.
-                </p>
-              </AlertDescription>
-           </Alert>
-
            {/* Graph Section */}
             {chartData && results?.mean !== undefined && results?.stdDev !== undefined && results.stdDev > 0 && (
               <>
@@ -503,20 +436,9 @@ export function NormalCalculator() {
                       />
                     </RechartsLineChart>
                   </ChartContainer>
-                  <Alert className="mt-4" variant="default">
-                      <InfoIcon className="h-4 w-4 text-primary"/>
-                      <AlertTitle className="text-primary">Interpretación de la Gráfica</AlertTitle>
-                      <AlertDescription className="space-y-1 text-foreground/90">
-                          <p>Esta gráfica muestra la Función de Densidad de Probabilidad (PDF) para la distribución normal con media (μ) = <strong>{results.mean.toFixed(3)}</strong> y desviación estándar (σ) = <strong>{results.stdDev.toFixed(3)}</strong>.</p>
-                          <p>El área total bajo la curva es 1. La altura de la curva en un punto x (f(x)) indica la densidad de probabilidad en ese punto; no es la probabilidad de que X sea exactamente x (que es 0 para distribuciones continuas).</p>
-                          <p>La probabilidad de que X caiga en un intervalo [a, b] es el área bajo la curva entre a y b.</p>
-                      </AlertDescription>
-                  </Alert>
                 </div>
               </>
             )}
-
-
         </div>
       )}
     </Card>
